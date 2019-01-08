@@ -5,10 +5,12 @@ name = "pypi"
 
 [packages]
 arctic = "*"
-pykrakenapi = {editable = true, path = "./../pykrakenapi"}
 click = "*"
 trio = "*"
 mypy = "*"
+spyder = "*"
+cryptocompare = "*"
+pykrakenapi = "*"
 
 [dev-packages]
 
