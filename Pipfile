@@ -6,11 +6,15 @@ name = "pypi"
 [packages]
 arctic = "*"
 click = "*"
-trio = "*"
 mypy = "*"
 spyder = "*"
+#cryptocompare = "*"
+#pykrakenapi = "*"
+pandas = "*"
+asks = "*"
+pytest = "*"
+mocket = "*"
 cryptocompare = "*"
-pykrakenapi = "*"
 
 [dev-packages]
 
