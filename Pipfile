@@ -15,6 +15,7 @@ asks = "*"
 pytest = "*"
 mocket = "*"
 cryptocompare = "*"
+matplotlib = "*"
 
 [dev-packages]
 
