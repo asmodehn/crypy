@@ -4,3 +4,6 @@
 [submodule "Technical-Indicators"]
 	path = Technical-Indicators
 	url = https://github.com/XorfacX/Technical-Indicators.git
+[submodule "mpl_finance"]
+	path = mpl_finance
+	url = https://github.com/XorfacX/mpl_finance.git
