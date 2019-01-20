@@ -71,6 +71,8 @@ import matplotlib.dates as mdates
 
 import json
 
+import TechnicalIndicators.indicator.indicators as ti
+
 #look into https://plot.ly/python/candlestick-charts/
 
 #df = pandas.read_json(crcomp.get_historical_price_minute())
@@ -102,12 +104,21 @@ df = pandas.read_json( json.dumps( crcomp.get_historical_price_day('BTC','USD','
 #df['Date'] = pandas.to_datetime(df['Date'])
 #df["Date"] = df["Date"].apply(mdates.date2num)
 df['time'] = pandas.to_datetime(df['time'], unit='s')
-df["time"] = df["time"].apply(mdates.date2num)
+df['time'] = df['time'].apply(mdates.date2num)
 print(df)
 
 # Creating required data in new DataFrame OHLC
-ohlc= df[['time', 'open', 'high', 'low','close']].copy()
+ohlc = df[['time', 'open', 'high', 'low', 'close']].copy()
 print(ohlc)
+
+# Formatting for indicator 'date', 'open', 'high', 'low', 'close', 'volume'
+#ha = df[['open', 'high', 'low', 'close']].copy()
+#ha['date'] = df['time']
+df['volume'] = df['volumeto'] - df['volumefrom']
+ha = ti.HA(df, ['open', 'high', 'low', 'close'])
+ha = ha.drop(['open', 'high', 'low', 'close', 'volumefrom', 'volumeto'], axis=1)
+ha = ha.rename(index=str, columns={"HA_close": "close", "HA_open": "open", "HA_high": "high", "HA_low": "low"})
+print(ha)
 
 # In case you want to check for shorter timespan
 # ohlc =ohlc.tail(60)
