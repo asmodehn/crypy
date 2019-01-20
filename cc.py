@@ -9,11 +9,20 @@ Created on Tue Jan  8 15:51:55 2019
 import cryptocompare.cryptocompare as crcomp # https://github.com/lagerfeuer/cryptocompare
 
 
-#print(cryptocompare.get_coin_list(format=False))
-#print(cryptocompare.get_price('BTC'))
+print( crcomp.get_coin_list(format=True) )
+print( crcomp.get_exchanges() )
+
+print( crcomp.get_price())
 print( crcomp.get_price(['BTC', 'ETH'], ['USD', 'EUR'], 'Kraken' ) )
+print( crcomp.get_avg('XBTUSD', 'USD', 'Bitmex') )
+
+print( crcomp.get_historical_price_ts() )
+print( crcomp.get_historical_price_day() )
+print( crcomp.get_historical_price_hour() )
+print( crcomp.get_historical_price_minute() )
 
 
+"""
 import matplotlib.pyplot as plt   # https://github.com/matplotlib/matplotlib
 import numpy as np
 
@@ -43,6 +52,6 @@ for ax in axes:
 plt.setp(axes, xticks=[y+1 for y in range(len(all_data))],
          xticklabels=['x1', 'x2', 'x3', 'x4'])
 plt.show()
-
+"""
 
 
