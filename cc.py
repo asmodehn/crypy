@@ -6,12 +6,15 @@ Created on Tue Jan  8 15:51:55 2019
 @author: alexv
 """
 
-import cryptocompare
-print(cryptocompare.get_coin_list(format=False))
-print(cryptocompare.get_price('BTC'))
+import cryptocompare.cryptocompare as crcomp # https://github.com/lagerfeuer/cryptocompare
 
 
-import matplotlib.pyplot as plt
+#print(cryptocompare.get_coin_list(format=False))
+#print(cryptocompare.get_price('BTC'))
+print( crcomp.get_price(['BTC', 'ETH'], ['USD', 'EUR'], 'Kraken' ) )
+
+
+import matplotlib.pyplot as plt   # https://github.com/matplotlib/matplotlib
 import numpy as np
 
 fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(9, 4))
