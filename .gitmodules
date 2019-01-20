@@ -1,9 +1,9 @@
 [submodule "cryptocompare"]
 	path = cryptocompare
 	url = https://github.com/XorfacX/cryptocompare.git
-[submodule "Technical-Indicators"]
-	path = Technical-Indicators
-	url = https://github.com/XorfacX/Technical-Indicators.git
 [submodule "mpl_finance"]
 	path = mpl_finance
 	url = https://github.com/XorfacX/mpl_finance.git
+[submodule "TechnicalIndicators"]
+	path = TechnicalIndicators
+	url = https://github.com/XorfacX/Technical-Indicators.git
