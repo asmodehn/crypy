@@ -14,8 +14,9 @@ pandas = "*"
 asks = "*"
 pytest = "*"
 mocket = "*"
-cryptocompare = "*"
+#cryptocompare = "*"
 matplotlib = "*"
+requests = "*"
 
 [dev-packages]
 
