@@ -17,6 +17,7 @@ mocket = "*"
 #cryptocompare = "*"
 matplotlib = "*"
 requests = "*"
+plotly = "*"
 
 [dev-packages]
 

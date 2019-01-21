@@ -80,7 +80,7 @@ import TechnicalIndicators.indicator.indicators as ti
 #df = df.groupby(['date','name','number'])['locations'].apply(','.join).reset_index()
 
 #print( json.loads( str( crcomp.get_historical_price_minute() ) ) )
-df = pandas.read_json( json.dumps( crcomp.get_historical_price_day('BTC','USD','Kraken')['Data'] ) )
+df = pandas.read_json( json.dumps( crcomp.get_historical_price_minute('ETH','EUR','Kraken')['Data'] ) )
 # http://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_json.html
 
 #df = type(crcomp.get_historical_price_minute())
@@ -167,5 +167,17 @@ ax.plot(ohlc['time'], ohlc['SMA100'], color = 'blue', label = 'SMA100')
 # In case you dont want to save image but just displya it
 
 # ohlc.to_csv('ohlc.csv')
-plt.show()
+#plt.show()
+
+
+import plotly as py
+import plotly.graph_objs as go
+
+trace = go.Candlestick(x=ha['time'],
+                open=ha['open'],
+                high=ha['high'],
+                low=ha['low'],
+                close=ha['close'])
+data = [trace]
+py.offline.plot(data, filename='simple_candlestick.html')
 
