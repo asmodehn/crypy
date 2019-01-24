@@ -7,3 +7,6 @@
 [submodule "TechnicalIndicators"]
 	path = TechnicalIndicators
 	url = https://github.com/XorfacX/Technical-Indicators.git
+[submodule "submodules/ccxt"]
+	path = submodules/ccxt
+	url = https://github.com/ccxt/ccxt.git
