@@ -9,6 +9,11 @@ import ccxt
 import configparser
 config = configparser.ConfigParser()
 config.read('crypy.ini')
-kraken = ccxt.kraken(config['kraken'])
+
+
+kraken = ccxt.kraken({ 'apiKey': config['kraken']['apiKey'], 'secret': config['kraken']['secret']}) #, 'verbose': True })
+
 
 print(kraken.fetch_balance())
+print(kraken.fetch_trading_fees())
+print(kraken.fetch_ticker('BTC/USD'))
