@@ -17,7 +17,6 @@ mocket = "*"
 matplotlib = "*"
 requests = "*"
 plotly = "*"
-ccxt = "*"
 
 [dev-packages]
 

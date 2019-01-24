@@ -4,10 +4,16 @@ import os
 import sys
 import time
 
-root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(root + '/python')
+import crypy.euc
+ccxt = crypy.euc.ccxt
 
-import ccxt  # noqa: E402
+# import configparser
+# config = configparser.ConfigParser()
+# config.read('crypy.ini')
+#bitmex = ccxt.bitmex(config['testnet.bitmex.com'])
+#
+# print(bitmex.fetch_balance())
+
 
 bitmex = ccxt.bitmex()
 
