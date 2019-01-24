@@ -15,6 +15,7 @@
 import contextlib
 import sys
 import importlib.util
+from pathlib import Path
 
 # QUICK HACK
 # TODO : properly, maybe with a 'silent' importer,
@@ -25,17 +26,21 @@ import importlib.util
 
 @contextlib.contextmanager
 def sys_path_ctx(path):
-    sys.path.insert(1, path)
+    sys.path.insert(1, str(path))
     yield
-    sys.path.remove(path)
+    sys.path.remove(str(path))
 
 
 # Note this is the path from the place where the python interpreter is launched
-with sys_path_ctx("submodules/ccxt/python/"):
+
+ccxt_path = Path(__file__).parents[2].joinpath("submodules/ccxt/python/").resolve()
+
+
+with sys_path_ctx(ccxt_path):
     import ccxt
 
 # ccxt is now loaded in sys.modules from the git submodules folder
-assert sys.modules['ccxt'].__file__ == 'submodules/ccxt/python/ccxt/__init__.py'
+assert sys.modules['ccxt'].__file__ == str(ccxt_path.joinpath('ccxt').joinpath('__init__.py'))
 
 
 __all__ = ['ccxt']
