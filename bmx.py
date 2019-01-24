@@ -7,15 +7,14 @@ import time
 import crypy.euc
 ccxt = crypy.euc.ccxt
 
-# import configparser
-# config = configparser.ConfigParser()
-# config.read('crypy.ini')
-#bitmex = ccxt.bitmex(config['testnet.bitmex.com'])
-#
-# print(bitmex.fetch_balance())
+import configparser
+config = configparser.ConfigParser()
+config.optionxform = str
+config.read('crypy.ini')
+bitmex = ccxt.bitmex(dict(config.items('testnet.bitmex.com')))
 
+print(bitmex.fetch_balance())
 
-bitmex = ccxt.bitmex()
 
 # params:
 symbol = 'BTC/USD'

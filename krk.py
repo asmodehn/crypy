@@ -5,13 +5,15 @@
 # ohlc, last = k.get_ohlc_data("ETHEUR")
 # print(ohlc)
 
-import ccxt
+import crypy.euc
+ccxt = crypy.euc.ccxt
+
 import configparser
 config = configparser.ConfigParser()
+config.optionxform = str
 config.read('crypy.ini')
 
-
-kraken = ccxt.kraken({ 'apiKey': config['kraken']['apiKey'], 'secret': config['kraken']['secret']}) #, 'verbose': True })
+kraken = ccxt.kraken(dict(config.items('kraken.com')))
 
 
 print(kraken.fetch_balance())
