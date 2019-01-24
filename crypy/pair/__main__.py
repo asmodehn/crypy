@@ -33,8 +33,9 @@ assert aliases.keys() == implementations.keys()
 @click.group(name='pair', invoke_without_command=True)
 @click.option('-p', '--pair', default='ETH/EUR')
 @click.option('-e', '--exchange', type=click.Choice(['kraken', 'testnet-bitmex', 'bitmex']), default='kraken')
+@click.option('-v', '--verbose', is_flag=True, default=False)
 @click.pass_context
-def pair_cli(ctx, pair=None, exchange=None):
+def pair_cli(ctx, pair=None, exchange=None, verbose=False):
 
     pair = 'ETH/EUR' if pair is None else pair
     exchange = 'kraken' if exchange is None else exchange
@@ -46,6 +47,8 @@ def pair_cli(ctx, pair=None, exchange=None):
             break
 
     config = dict(crypy.config.config().items(exchange))
+
+    config['verbose']= verbose
 
     ctx.obj = {
         'exchange': implementations[exchange](config),
@@ -61,9 +64,12 @@ def pair_cli(ctx, pair=None, exchange=None):
 @pair_cli.command(name='ohlcv')
 @click.option('--timeframe', default='1h')
 @click.option('--aggregate', default=3)
-@click.option('--graph', default=True)  # various views are implemented as options.
+@click.option('--graph', is_flag=True, default=True )  # various views are implemented as options
+# We can show one or more, default to graph.
+#TODO : more views
+@click.option('-v', '--verbose', is_flag=True, default=False)
 @click.pass_obj
-def ohlcv(obj, timeframe=None, aggregate=None, graph=True):
+def ohlcv(obj, timeframe=None, aggregate=None, graph=True, verbose=False):
 
     timeframe = '1h' if timeframe is None else timeframe
     aggregate = 3 if aggregate is None else aggregate
@@ -82,7 +88,7 @@ def ohlcv(obj, timeframe=None, aggregate=None, graph=True):
     if graph:
         print("\n" + obj.get('pair') + ' ' + timeframe + ' chart:')
 
-        last = crypy.pair.chart(series)
+        crypy.pair.chart(series)
 
         print("\n" + obj.get('exchange').name + " ₿ = $" + str(last) + "\n")  # print last closing price
 
