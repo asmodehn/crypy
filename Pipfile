@@ -9,15 +9,15 @@ click = "*"
 mypy = "*"
 spyder = "*"
 #cryptocompare = "*"
-#pykrakenapi = "*"
+pykrakenapi = "*"
 pandas = "*"
 asks = "*"
 pytest = "*"
 mocket = "*"
-#cryptocompare = "*"
 matplotlib = "*"
 requests = "*"
 plotly = "*"
+ccxt = "*"
 
 [dev-packages]
 
