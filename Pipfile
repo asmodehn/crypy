@@ -17,6 +17,7 @@ mocket = "*"
 matplotlib = "*"
 requests = "*"
 plotly = "*"
+click-repl = "*"
 
 [dev-packages]
 

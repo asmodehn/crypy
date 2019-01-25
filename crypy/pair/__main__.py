@@ -3,8 +3,13 @@
 # Goal is to provide a process interface (supporting death and rebirth)
 # and internally using a usual python API.
 # this __main__ file should provide all that's needed for the process interface to be used.
+import os
+import sys
 
 import click
+from click_repl import repl as crepl
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 import crypy.config
 import crypy.pair
@@ -48,16 +53,25 @@ def pair_cli(ctx, pair=None, exchange=None, verbose=False):
 
     config = dict(crypy.config.config().items(exchange))
 
-    config['verbose']= verbose
+    config['verbose'] = verbose
 
     ctx.obj = {
         'exchange': implementations[exchange](config),
         'pair': pair,
     }
 
+    # starting repl if no command passed
     if ctx.invoked_subcommand is None:
-        # default command
-        ctx.invoke(ohlcv)
+        prompt_kwargs = {
+            'message': u'crypy> ',
+            'history': FileHistory(os.path.join(sys.path[0], 'crypy.hist')),
+            'auto_suggest': AutoSuggestFromHistory()
+        }
+
+        # launching repl
+        crepl(ctx, prompt_kwargs=prompt_kwargs)
+
+
     # otherwise invoke the specified subcommand (default behavior)
 
 
@@ -66,7 +80,7 @@ def pair_cli(ctx, pair=None, exchange=None, verbose=False):
 @click.option('--aggregate', default=3)
 @click.option('--graph', is_flag=True, default=True )  # various views are implemented as options
 # We can show one or more, default to graph.
-#TODO : more views
+# TODO : more views
 @click.option('-v', '--verbose', is_flag=True, default=False)
 @click.pass_obj
 def ohlcv(obj, timeframe=None, aggregate=None, graph=True, verbose=False):

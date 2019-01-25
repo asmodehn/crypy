@@ -3,9 +3,13 @@
 # Goal is to provide a process interface (supporting death and rebirth)
 # and internally using a usual python API.
 # this __main__ file should provide all that's needed for the process interface to be used.
+import os
+import sys
 
 import click
-
+from click_repl import repl as crepl
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 import crypy.config
 import crypy.pair
@@ -50,9 +54,19 @@ def exchange_cli(ctx, exchange=None, verbose=False):
         'exchange': implementations[exchange](config),
     }
 
+
+    # starting repl if no command passed
     if ctx.invoked_subcommand is None:
-        # default command
-        ctx.invoke(markets)
+        prompt_kwargs = {
+            'message': u'crypy> ',
+            'history': FileHistory(os.path.join(sys.path[0], 'crypy.hist')),
+            'auto_suggest': AutoSuggestFromHistory()
+        }
+
+        # launching repl
+        crepl(ctx, prompt_kwargs=prompt_kwargs)
+
+
     # otherwise invoke the specified subcommand (default behavior)
 
 
