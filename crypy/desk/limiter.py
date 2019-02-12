@@ -1,8 +1,14 @@
 import typing
-
 import functools
+from dataclasses import dataclass, field
 import time
-from . import errors
+
+try:  # relative imports
+    from . import errors
+except ImportError:
+    # load from installed package instead of source
+    # useful for incremental (module per module) changes
+    from crypy.desk import errors
 
 from requests import HTTPError
 
@@ -16,44 +22,95 @@ class CallRateLimitError(Exception):
     pass
 
 
-class CallProfiler(typing.NamedTuple):
+@dataclass
+class Limiter:
     """
-    An immutable data structure to track function calls times.
+    An immutable data structure to limit calls times.
+    Composable : limiter()()()() will keep the call frequency
+    >>> l = Limiter(frequency=1)
+    >>> start = time.time()
+    >>> l()
+    >>> lap = time.time() - start
+    >>> print(lap)
+
+    >>> l()()
+    >>> lap = time.time() - lap
+    >>> print(lap)
+
     """
-    last_call: float
-    frequency: float = 0.2
-    sleep: typing.Callable = time.sleep
+    #: We want the current time to be able to add and remove limiter
+    #: with immediate effect (prevent call bursts)
+
+    target_frequency: float = 1.0
+    now: typing.Callable = field(default=time.time, repr=False)
+    sleep: typing.Callable = field(default=time.sleep, repr=False)
+    epsilon: float = 0.01  # error (WARNING : this will depend on your OS/machine !)
+
+    periods_measured: typing.List[float] = field(init=False, repr=False)
+    last_call: float = field(init=False, repr=False)
+
+    def __post_init__(self):
+        self.periods_measured = []
+        self.last_call = self.now()
+
+    def __call__(self):
+        #TODO : make it async proof if more is needed.
+        #TODO : make it multithread proof.... if possible.
+        period = 1 / self.target_frequency
+
+        # if we need to, we wait... (note we could also async wait...)
+        begin = self.now()
+        since_last = begin - self.last_call
+        if since_last < period:
+            self.sleep(period - since_last + self.epsilon)  # in doubt, we oversleep
+
+        last_period = self.now() - begin
+
+        if last_period < period:  # we didn't sleep enough
+            self.sleep(self.epsilon)  # sleep a bit more
+            # double epsilon
+            self.epsilon += self.epsilon
+        elif last_period - period < self.epsilon:  # TODO : work on control theory to optimize call frequency based on measured perf
+            # slept more than enough
+            self.epsilon -= self.epsilon / 2
+
+        # last_period after epsilon rectification
+        last_period = self.now() - begin
+
+        self.periods_measured.append(last_period)
+        self.last_call = self.now()
+        return self
+
+    @property
+    def average_period(self):
+        return sum(self.periods_measured)/len(self.periods_measured)
 
 
-def limiter(profiler: CallProfiler = CallProfiler(last_call = time.time())):
+def limiter(limiter: Limiter = Limiter()):
     """
     a limiter to use as a decorator.
-    :param profiler: A profiler can be passed. useful to limit a group of functions together as one
-     The last_call members default to now, to allow adding/removing limiter dynamically
-      without triggering a burst of call unintentionally.
+    :param limiter: A limiter can be passed. useful to limit a group of functions together as one
     :return: a decorator to apply to the function you want to limit.
     """
 
     def decorator(func):
+        """
+        A decorator
+        :param func:
+        :param profiler:
+        :return:
+        """
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-
-            nonlocal profiler
-            profiler = profiler
-            now = time.time()
-
-            period = 1 / profiler.frequency
-            # if we need to, we wait... (note we can also async wait...)
-            if now - profiler.last_call < period:
-                profiler.sleep(period - (now - profiler.last_call))
-
-            profiler = CallProfiler(last_call=time.time(), frequency=profiler.frequency, sleep=profiler.sleep)
+            limiter()
             return func(*args, **kwargs)
 
         return wrapper
 
     return decorator
+
+
 
 ############ from pykrakenapi
 
@@ -139,4 +196,11 @@ def callrate_limiter(query_type):
     return decorate_func
 
 
+if __name__ == '__main__':
+    l = Limiter(target_frequency=1)
+    # tick tock the clock
+    start = time.time()
+    for i in range(60):
+        l()
+        print(f"Limiter {l} period {l.average_period}")
 
