@@ -1,4 +1,8 @@
 import cmd
+import copy
+import types
+
+import functools
 import os
 import random
 import sys
@@ -167,6 +171,61 @@ class StackableCmd(cmd.Cmd):
 #             t.cmdloop(f"Position on {pair}")
 
 
+class Truc(StackableCmd):
+    """
+    undoable changes in a dict
+    """
+
+    def __init__(self, prompt_apd: str = None, data=None):
+        self.data = {} if data is None else data
+        self.changes = []
+
+        def changekey(key):
+            def changeval(me, val):
+                me.changes += [(key, val)]
+            return changeval
+
+        for k in data.keys():
+            change_cmd = types.MethodType(changekey(k), self)
+            setattr(self, 'do_' + k, change_cmd)
+
+        super().__init__(prompt_apd="truc" if prompt_apd is None else prompt_apd)
+
+    def preloop(self):
+        # opening
+        print("opening data : ")
+        for k, v in self.data.items():
+            print(f"-{k} -> {v}")
+
+        super().preloop()
+
+    def postloop(self):
+
+        try:
+            update = input("update? [y/n]")
+            if update not in ['n', 'no']:
+                self.apply_changes(self.data)
+        except EOFError:
+            print("Everything has been cancelled, input has been closed.")
+
+        super().postloop()
+
+    def apply_changes(self, mut_d):
+        for c in self.changes:
+            # apply changes
+            mut_d[c[0]] = c[1]
+
+    def do_undo(self, arg):
+        self.changes.pop()
+
+    def do_show(self, arg):
+        c = copy.deepcopy(self.data)
+        self.apply_changes(c)
+
+        for k, v in c.items():
+            print(f"-{k} -> {v}")
+
+
 class Pair(StackableCmd):
     def __init__(self, prompt_apd: str, usedPair: str = None):
         self.usedPair = defPAIR if usedPair is None else usedPair.upper()
@@ -257,6 +316,22 @@ class Desk(cmd.Cmd):
         pair = defPAIR if pair is '' else pair.upper()
         t = Pair(prompt_apd=pair, usedPair=pair)
         t.cmdloop()
+
+    def do_truc(self, arg):
+
+        # using stub data
+        arg = {
+            'machin': 42,
+            'truc' : 'is the',
+            'bidule': 'answer'
+        }
+
+        Truc.prompt = self.prompt  # patching class prompt, as beginning of the prompt stack
+        t = Truc(data = arg)
+        t.cmdloop()
+
+        print("new data : ")
+        print(arg)
 
 
 '''
