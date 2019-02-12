@@ -178,25 +178,28 @@ class Pair(StackableCmd):
         super().__init__(prompt_apd=prompt_apd)
 
     def preloop(self):
-        print("managing pair " + self.usedPair)
+        print("using pair " + self.usedPair)
         super().preloop()
 
-    # all commands below are subcommand available when the pair is define above
-    def do_list_data(self):
-        print(f"displaying {self.usedPair} infos (price, graph, analisys, indicators)")
-        print(wholeData[self.usedPair].data)
+    def do_list(self, arg):
+        """display current pair informations
+        @param:
+            data {default}: for data
+            orders: for orders
+            positions: for positions
+            trades: for past trades
+        """
 
-    def do_orders(self, arg):
-        print(f"displaying {self.usedPair} current orders")
-        print(wholeData[self.usedPair].get('orders'))
+        arg = "data" if arg is '' else arg
+        what = {
+            'data': 'data',
+            'orders': 'orders',
+            'positions': 'positions',
+            'trades': 'trades'
+        }.get(arg, "data")
 
-    def do_list_positions(self):
-        print(f"displaying {self.usedPair} current positions")
-        print(wholeData[self.usedPair].positions)
-
-    def do_list_trades(self):
-        print(f"displaying {self.usedPair} trades histo")
-        print(wholeData[self.usedPair].trades)
+        print(f"{self.usedPair} current {what}:")
+        print(wholeData[self.usedPair][what])
 
     # NB: ALL "OPEN" commands below will need their UPDATE & CANCEL counter parts
     def do_open_long(self, amount, price, type, leverage, expiracy):
