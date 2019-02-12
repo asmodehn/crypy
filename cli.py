@@ -4,7 +4,64 @@ import random
 import sys
 
 defPAIR = "ETHUSD"
-data = {} #will be gotten from the bot in the end
+
+#nb: will be gotten from the bot in the end
+#nb2 link to exchange first
+wholeData = {
+    'ETHUSD': {
+        'data': {
+            'value': 105,
+            'indicators': { 'rsi': 52.01, 'ew': 'five of five of 1 up' },
+            #### TIMEFRAME for data ?? ####
+            'orderbook': []
+        },
+        'positions': [
+            {
+                'side': 'short',
+                'amount': 60,
+                'price': 92.19,
+                'leverage': 5,
+                'p/l %': 10,
+                'p/l': 800
+            }
+        ],
+        'orders': [
+            {
+                'side': 'short',
+                'type': 'limit',
+                'amount': 30,
+                'price': 92,
+                'leverage': 5,
+                'expiracy': '1 hour'
+            },
+            {
+                'side': 'short',
+                'type': 'limit',
+                'amount': 35,
+                'price': 96,
+                'leverage': 5
+            }
+        ],
+        'trades': [
+            {
+                'side': 'short',
+                'type': 'limit',
+                'amount': 35,
+                'price': 96,
+                'leverage': 5,
+                'datetime': '2018/05/02 15:32:12'
+            },
+            {
+                'side': 'long',
+                'type': 'limit',
+                'amount': 35,
+                'price': 95,
+                'leverage': 5,
+                'datetime': '2018/09/02 15:32:12'
+            }
+        ]
+    }
+}
 
 class StackableCmd(cmd.Cmd):
     def __init__(self, prompt, completekey='tab', stdin=None, stdout=None):
@@ -61,15 +118,19 @@ class Pair(StackableCmd):
     # all commands below are subcommand available when the pair is define above
     def do_list_data(self):
         print(f"displaying {self.usedPair} infos (price, graph, analisys, indicators)")
+        print(wholeData[self.usedPair].data)
 
     def do_list_orders(self):
         print(f"displaying {self.usedPair} current orders")
+        print(wholeData[self.usedPair].orders)
 
     def do_list_positions(self):
         print(f"displaying {self.usedPair} current positions")
+        print(wholeData[self.usedPair].positions)
 
     def do_list_trades(self):
         print(f"displaying {self.usedPair} trades histo")
+        print(wholeData[self.usedPair].trades)
 
     # NB: ALL "OPEN" commands below will need their UPDATE & CANCEL counter parts
     def do_open_long(self, amount, price, type, leverage, expiracy):
@@ -104,7 +165,7 @@ class Desk(StackableCmd):
 
     def do_use_pair(self, pair=defPAIR):
         with open(os.dup(sys.stdin.fileno()), sys.stdin.mode) as stdin:
-            pair = defPAIR if pair is '' else pair
+            pair = defPAIR if pair is '' else pair.upper()
             t = Pair(prompt=(self.prompt + pair), stdin=stdin, usedPair=defPAIR)
             t.cmdloop()
 
