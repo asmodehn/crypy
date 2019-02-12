@@ -251,8 +251,10 @@ class Desk(cmd.Cmd):
         Uses a specific pair. Choose one of [ETHUSD, ETHEUR]
         """
         Pair.prompt = self.prompt  # patching class prompt, as beginning of the prompt stack
+        pair = defPAIR if pair is '' else pair.upper()
         t = Pair(prompt_apd=pair, usedPair=pair)
         t.cmdloop()
+
 
 '''
     def do_invest(self, asset="EUR"):
