@@ -198,8 +198,7 @@ class Pair(StackableCmd):
             'trades': 'trades'
         }.get(arg, "data")
 
-        print(f"{self.usedPair} current {what}:")
-        print(wholeData[self.usedPair][what])
+        print( f"{self.usedPair} {what}: {str(wholeData[self.usedPair][what])}" )
 
     # NB: ALL "OPEN" commands below will need their UPDATE & CANCEL counter parts
     def do_open_long(self, amount, price, type, leverage, expiracy):
@@ -238,6 +237,24 @@ class Desk(cmd.Cmd):
         print(f"list all current orders for all pairs")
     def do_list_trades(self):
         print(f"list all past trades for all pairs")
+
+    def do_list(self, arg):
+        """display all followed pairs informations
+        @param:
+            data {default}: for data
+            orders: for orders
+            positions: for positions
+            trades: for past trades
+        """
+        arg = "data" if arg is '' else arg
+        what = {
+            'data': 'data',
+            'orders': 'orders',
+            'positions': 'positions',
+            'trades': 'trades'
+        }.get(arg, "data")
+        for pair in wholeData:
+            print( f"{pair} {what}: {str(wholeData[pair][what])}" )
 
 
     def do_exit(self, arg):
