@@ -286,16 +286,17 @@ class Pair(StackableCmd):
 class Desk(cmd.Cmd):
 
     def __init__(self, prompt=None):
-
         self.prompt = ("desk" if prompt is None else prompt) + ">"
         super().__init__()
 
-    def do_list_positions(self):
-        print(f"list all current positions for all pairs")
-    def do_list_orders(self):
-        print(f"list all current orders for all pairs")
-    def do_list_trades(self):
-        print(f"list all past trades for all pairs")
+    def do_exit(self, arg):
+        return True
+
+    def do_EOF(self, arg):
+        # BROKEN : stdin stays closed ?
+        # TODO : fixit
+        return True
+
 
     def do_list(self, arg):
         """display all followed pairs informations
@@ -314,16 +315,6 @@ class Desk(cmd.Cmd):
         }.get(arg, "data")
         for pair in wholeData:
             print( f"{pair} {what}: {str(wholeData[pair][what])}" )
-
-
-    def do_exit(self, arg):
-        return True
-
-    def do_EOF(self, arg):
-        # BROKEN : stdin stays closed ?
-        # TODO : fixit
-        return True
-
 
     def do_pair(self, pair="ETHUSD"):
         """
