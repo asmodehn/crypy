@@ -23,18 +23,18 @@ class CallRateLimitError(Exception):
 
 
 @dataclass
-class Limiter:
+class CallLimiter:
     """
     An immutable data structure to limit calls times.
     Composable : limiter()()()() will keep the call frequency
-    >>> l = Limiter(frequency=1)
-    >>> start = time.time()
+    >>> l = CallLimiter(frequency=1)
+    >>> start = time.perf_counter()
     >>> l()
-    >>> lap = time.time() - start
+    >>> lap = time.perf_counter() - start
     >>> print(lap)
 
     >>> l()()
-    >>> lap = time.time() - lap
+    >>> lap = time.perf_counter() - lap
     >>> print(lap)
 
     """
@@ -42,32 +42,29 @@ class Limiter:
     #: with immediate effect (prevent call bursts)
 
     target_frequency: float = 1.0
-    now: typing.Callable = field(default=time.time, repr=False)
-    sleep: typing.Callable = field(default=time.sleep, repr=False)
+    _now: typing.Callable = field(default=time.perf_counter, repr=False)
+    _sleep: typing.Callable = field(default=time.sleep, repr=False)
+
     epsilon: float = 0.01  # error (WARNING : this will depend on your OS/machine !)
-
-    periods_measured: typing.List[float] = field(init=False, repr=False)
-    last_call: float = field(init=False, repr=False)
-
-    def __post_init__(self):
-        self.periods_measured = []
-        self.last_call = self.now()
+    _periods_measured: typing.List[float] = field(init=False, default_factory=list, repr=False)
+    # Last call needs to be initialized with _now()
+    _last_call: float = field(init=False, default_factory=time.perf_counter, repr=False)
 
     def __call__(self):
         #TODO : make it async proof if more is needed.
         #TODO : make it multithread proof.... if possible.
-        period = 1 / self.target_frequency
+        period = 1 / self.target_frequency  # Hz to secs
 
         # if we need to, we wait... (note we could also async wait...)
-        begin = self.now()
-        since_last = begin - self.last_call
+        begin = self._now()
+        since_last = begin - self._last_call
         if since_last < period:
-            self.sleep(period - since_last + self.epsilon)  # in doubt, we oversleep
+            self._sleep(period - since_last)
 
-        last_period = self.now() - begin
+        last_period = self._now() - begin
 
         if last_period < period:  # we didn't sleep enough
-            self.sleep(self.epsilon)  # sleep a bit more
+            self._sleep(self.epsilon)  # sleep a bit more
             # double epsilon
             self.epsilon += self.epsilon
         elif last_period - period < self.epsilon:  # TODO : work on control theory to optimize call frequency based on measured perf
@@ -75,18 +72,18 @@ class Limiter:
             self.epsilon -= self.epsilon / 2
 
         # last_period after epsilon rectification
-        last_period = self.now() - begin
+        last_period = self._now() - begin
 
-        self.periods_measured.append(last_period)
-        self.last_call = self.now()
+        self._periods_measured.append(last_period)
+        self._last_call = self._now()
         return self
 
     @property
     def average_period(self):
-        return sum(self.periods_measured)/len(self.periods_measured)
+        return sum(self._periods_measured) / len(self._periods_measured)
 
 
-def limiter(limiter: Limiter = Limiter()):
+def limiter(limiter: CallLimiter = CallLimiter()):
     """
     a limiter to use as a decorator.
     :param limiter: A limiter can be passed. useful to limit a group of functions together as one
@@ -197,10 +194,10 @@ def callrate_limiter(query_type):
 
 
 if __name__ == '__main__':
-    l = Limiter(target_frequency=1)
+    l = CallLimiter(target_frequency=1)
     # tick tock the clock
     start = time.time()
     for i in range(60):
         l()
-        print(f"Limiter {l} period {l.average_period}")
+        print(f"Limiter {l} last period {l._periods_measured[-1]} avg {l.average_period}")
 

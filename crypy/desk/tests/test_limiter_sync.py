@@ -16,28 +16,28 @@ def test_calllimiter_sync():
             acc += a
         return acc
 
-    start = time.time()
+    start = time.perf_counter()
     funtest(1024)
-    duration = time.time() - start
+    duration = time.perf_counter() - start
     assert duration < period  # making sure the call limiter will be meaningful
 
     #creating the limiter
-    l = limiter.Limiter(target_frequency=1.0 / period)
+    l = limiter.CallLimiter(target_frequency=1.0 / period)
 
     # using limiter inflow
-    start = time.time()
+    start = time.perf_counter()
     l()
     funtest(1024)
-    duration = time.time() - start
+    duration = time.perf_counter() - start
     assert duration > period  # making sure the call limiter is doing its job
 
     # adding the limiter decorator, dynamically
 
     ldec = limiter.limiter(l)(funtest)
 
-    start = time.time()
+    start = time.perf_counter()
     ldec(1024)
-    duration = time.time() - start
+    duration = time.perf_counter() - start
 
     assert duration > period  # making sure the call limiter is doing its job
 
@@ -54,36 +54,36 @@ def test_calllimiter_group_sync():
     def funtest2(accmax):
         return funtest1(accmax)
 
-    start = time.time()
+    start = time.perf_counter()
     funtest1(1024)
     funtest2(1024)
-    duration = time.time() - start
+    duration = time.perf_counter() - start
     assert duration < period  # making sure the call limiter will be meaningful
 
     # creating the limiter
-    l = limiter.Limiter(target_frequency=1.0 / period)
+    l = limiter.CallLimiter(target_frequency=1.0 / period)
 
     # using limiter inflow
-    start = time.time()
+    start = time.perf_counter()
     l()
     funtest1(1024)
-    lap = time.time() - start
+    lap = time.perf_counter() - start
     assert period < lap < 2 * period
     l()
     funtest2(1024)
-    finish = time.time() - start
+    finish = time.perf_counter() - start
     assert 2 * period < finish < 3 * period  # making sure the call limiter is doing its job
 
     # adding the limiter decorator, dynamically, using teh same limiter instance
     lfuntest1 = limiter.limiter(l)(funtest1)
     lfuntest2 = limiter.limiter(l)(funtest1)
 
-    start = time.time()
+    start = time.perf_counter()
     lfuntest1(1024)  # immediate
-    lap = time.time() - start
+    lap = time.perf_counter() - start
     assert period < lap < 2 * period
     lfuntest2(1024)  # should wait a bit
-    finish = time.time() - start
+    finish = time.perf_counter() - start
     assert 2 * period < finish < 3 * period  # making sure ot s also working for two function with one profiler
 
     # Stacking limited calls on the same limiter instance
@@ -91,9 +91,9 @@ def test_calllimiter_group_sync():
     def funtest3(accmax):
         return lfuntest1(accmax)
 
-    start = time.time()
+    start = time.perf_counter()
     funtest3(1024)  # more than 2 periods
-    finish = time.time() - start
+    finish = time.perf_counter() - start
     assert 2 * period < finish < 3 * period
 
 #
