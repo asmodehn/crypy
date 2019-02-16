@@ -7,6 +7,8 @@ import os
 import random
 import sys
 
+from ast import literal_eval
+
 defPAIR = "ETHUSD"
 
 #nb: will be gotten from the bot in the end
@@ -260,12 +262,27 @@ class Pair(StackableCmd):
         print( f"{self.usedPair} {what}: {str(wholeData[self.usedPair][what])}" )
 
     # NB: ALL "OPEN" commands below will need their UPDATE & CANCEL counter parts
-    def do_open_long(self, amount, price, type, leverage, expiracy):
+    def do_long(self, type, amount, price, leverage, expiracy):
         print(f"open {self.usedPair} long position")
         # TODO: allow a target_close_order and a stop_sell_order to be define at the same time and simultaneously executed/canceled (ie the first one executed cancel the other one)
 
-    def do_open_short(self, amount, price, type, leverage, expiracy):
+    def do_short(self, arg="(type, amount, price, leverage, expiracy)"):
         print(f"open {self.usedPair} short position")
+        print(arg)  #arg {"type": "limit", "amount": 50, "price":  100, "leverage": 5}
+        info = literal_eval(arg)
+        default = {"type": "limit", "amount": 50, "price":  100, "leverage": 5}
+        arg if arg is not None else default
+        print(info)
+
+        wholeData[self.usedPair]['orders'].append({
+            'side': 'short',
+            'type': info.type,
+            'amount': info.amount,
+            'price': info.price,
+            'leverage': info.leverage,
+            'expiracy': info.expiracy if info.expriracy is not None else 'None'
+        })
+        # TODO confirmation
         # TODO: allow a target_close_order and a stop_buy_order to be define at the same time and simultaneously executed/canceled (ie the first one executed cancel the other one)
 
     def do_open_position_trailing_stop_percent(self, percent):
