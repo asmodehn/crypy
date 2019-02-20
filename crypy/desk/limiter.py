@@ -15,12 +15,12 @@ import time
 
 try:  # relative imports
     from . import errors
+    from . import bounds
 except ImportError:
     # load from installed package instead of source
     # useful for incremental (module per module) changes
     from crypy.desk import errors
-
-from requests import HTTPError
+    from crypy.desk import bounds
 
 
 """This module implements rate limiter for function call"""
@@ -48,33 +48,9 @@ def slumber(secs: float = 1.0) -> None:
 
 # TODO : this can be made generic by parametrizing on the type float
 # TODO : optimized interval logic ?
-class PeriodBounds(typing.NamedTuple):
-    upper: typing.Optional[float] = None
-    lower: typing.Optional[float] = None
-
+PeriodBounds = bounds.Bounds
 
 # TODO : invertible to get FrequencyBounds...
-
-
-def check_call_period_bounds(bounds: PeriodBounds, last_period: float, on_under: typing.Optional[typing.Callable] = None, on_over: typing.Optional[typing.Callable] = None):
-    proceed = True  # proceed by default
-
-    if bounds.lower and last_period < bounds.lower:
-        try:
-            proceed = on_under(last_period, bounds.lower)
-        except TypeError:
-            if on_under is None:
-                return True  # no action on out of bounds -> keep usual semantics
-            raise
-    elif bounds.upper and last_period > bounds.upper:
-        try:
-            proceed = on_over(last_period, bounds.upper)
-        except TypeError:
-            if on_over is None:
-                return True  # no action on out of bounds -> keep usual semantics
-            raise
-    return proceed
-
 
 # TODO : numpy-based PID controller of procedure call (ie function application) period.
 
@@ -87,7 +63,7 @@ class CallBoundedFunc:
     func: typing.Callable = field(default=lambda: None)
     calltimer: typing.List[float] = field(default_factory=list, repr=False)  # TODO : bound in size
 
-    limits: PeriodBounds = field(default=PeriodBounds(lower=1.0, upper=None))
+    limits: PeriodBounds = field(default=PeriodBounds(lower=1.0))
 
     on_undercall: typing.Optional[typing.Callable] = None
     on_overcall: typing.Optional[typing.Callable] = None
@@ -97,15 +73,17 @@ class CallBoundedFunc:
         # Design : func should be an specific class instance
         #          that allows retrieving from cache or not depending on params or context...
         self.last_res = None
-        self.calltimer.append(time.perf_counter())
 
     def __call__(self, *args, **kwargs):
         # TODO : manage undercall properly, especially first time (initialization, etc.)
-        proceed = check_call_period_bounds(
-            bounds=self.limits,
-            last_period=time.perf_counter() - self.calltimer[-1],
-            on_under=self.on_overcall,  # Note over period is under frequency and vice versa...
-            on_over=self.on_undercall)
+        if len(self.calltimer) < 1:
+            proceed = True
+        else:
+            proceed = self.limits(
+                value=time.perf_counter() - self.calltimer[-1],
+                on_under=self.on_overcall,  # Note over period is under frequency and vice versa...
+                on_over=self.on_undercall)
+
         if proceed:
             self.calltimer.append(time.perf_counter())
             self.last_res = self.func(*args, **kwargs)
@@ -138,7 +116,8 @@ class CallQueuer:
     """
     max_cps: float = 1.0
 
-    calltimes: typing.List[float] = field(default_factory=list)
+    # We initialize the calltimes on construction, to start queueing calls immediately.
+    calltimes: typing.List[float] = field(default_factory=lambda: [time.perf_counter()])
 
     def __post_init__(self):
         self._bounds = PeriodBounds(lower=1/self.max_cps)
@@ -148,10 +127,9 @@ class CallQueuer:
             slumber(bound - last_period)
             return True
 
-        cbf = CallBoundedFunc(func=func, limits=self._bounds, calltimer=self.calltimes, on_overcall=sleep_n_proceed )
+        cbf = CallBoundedFunc(func=func, limits=self._bounds, calltimer=self.calltimes, on_overcall=sleep_n_proceed)
 
         return cbf
-
 
 
 @dataclass
@@ -167,6 +145,7 @@ class CallDropper:
     """
     max_cps: float = 1.0
 
+    # We leave the calltimes empty on construction, to force a first call before we can keep (and reuse) the result.
     calltimes: typing.List[float] = field(default_factory=list)
 
     def __post_init__(self):
