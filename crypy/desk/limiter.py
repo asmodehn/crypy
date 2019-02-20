@@ -85,7 +85,7 @@ class CallBoundedFunc:
 
     # TODO : require a pure function (or idempotent, depending if you consider the state as an arg or not)
     func: typing.Callable = field(default=lambda: None)
-    calltimer: typing.List[float] = field(init=False, default_factory=list, repr=False)  # TODO : bound in size
+    calltimer: typing.List[float] = field(default_factory=list, repr=False)  # TODO : bound in size
 
     limits: PeriodBounds = field(default=PeriodBounds(lower=1.0, upper=None))
 
@@ -126,45 +126,59 @@ class CallBoundedFunc:
         return round(self.calltimer[-1] - self.calltimer[-2], 4)
 
 
-def wait_limiter(max_cps=1):
+@dataclass
+class CallQueuer:
     """
     A call limiter to use as a decorator.
     This limiter will wait until it is allowed to call the function again.
-    Note : you can use the returned function to decorate multiple functions, if you want to limit them as a group.
+    Note : you can use the function returned by CallQueuer.__call__(func) to decorate multiple functions,
+           if you want to limit them as a group.
     :param max_cps: Maximum number of calls per seconds to enforce
     :return: a decorator to apply to the function you want to limit.
     """
+    max_cps: float = 1.0
 
-    def sleep_n_proceed(last_period, bound):
-        slumber(bound - last_period)
-        return True
+    calltimes: typing.List[float] = field(default_factory=list)
 
-    def decorator(func):
-        # Todo : proper wrapper ?
-        return CallBoundedFunc(func=func, limits=PeriodBounds(lower=max_cps, upper=None), on_overcall=sleep_n_proceed)
+    def __post_init__(self):
+        self._bounds = PeriodBounds(lower=1/self.max_cps)
 
-    return decorator
+    def __call__(self, func):
+        def sleep_n_proceed(last_period, bound):
+            slumber(bound - last_period)
+            return True
+
+        cbf = CallBoundedFunc(func=func, limits=self._bounds, calltimer=self.calltimes, on_overcall=sleep_n_proceed )
+
+        return cbf
 
 
-def drop_limiter(max_cps=1):
+
+@dataclass
+class CallDropper:
     """
     A call limiter to use as a decorator.
-    This limiter will drop the call by raising an exception if it is called too quickly.
+    This limiter will drop the call if it is called too quickly, and return the previous result of the call.
     Note : you can use the returned function to decorate multiple functions, if you want to limit them as a group.
     WARNING : to not change the semantics of your program, the function should be "as pure as possible",
               ie, skipping a call should not matter...
     :param max_cps: Maximum number of calls per seconds to enforce
     :return: a decorator to apply to the function you want to limit.
     """
+    max_cps: float = 1.0
 
-    def drop(last_period, bound):
-        return False  # ignore arguments and return false to drop the call (and use a cached value)
+    calltimes: typing.List[float] = field(default_factory=list)
 
-    def decorator(func):
-        # Todo : proper wrapper ?
-        return CallBoundedFunc(func=func, limits=PeriodBounds(lower=max_cps, upper=None), on_overcall=drop)
+    def __post_init__(self):
+        self._bounds = PeriodBounds(lower=1 / self.max_cps)
 
-    return decorator
+    def __call__(self, func):
+        def skip_next(last_period, bound):
+            return False
+
+        cbf = CallBoundedFunc(func=func, limits=self._bounds, calltimer=self.calltimes, on_overcall=skip_next)
+
+        return cbf
 
 
 if __name__ == '__main__':
@@ -173,7 +187,7 @@ if __name__ == '__main__':
     # tick tock the clock
     start = time.time()
 
-    @wait_limiter(max_cps=1)
+    @CallQueuer(max_cps=1)
     def printtime():
         print(f"{time.time()-start}")
 
@@ -186,7 +200,7 @@ if __name__ == '__main__':
     start = time.time()
     val = 0
 
-    @drop_limiter(max_cps=1)
+    @CallDropper(max_cps=1)
     def incr():
         global val
         print(f"{time.time() - start}")
