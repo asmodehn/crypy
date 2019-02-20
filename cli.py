@@ -251,6 +251,8 @@ class Order(StackableCmd):
         def changekey(key):
             def changeval(me, val):
                 me.changes += [(key, val)]
+                # TODO value checking
+                # TODO defaults
             return changeval
 
         for k in self.data.keys():
@@ -261,7 +263,7 @@ class Order(StackableCmd):
 
     def preloop(self):
         # opening
-        print("order data : ")
+        print("--> format: ")
         for k, v in self.data.items():
             print(f"¤ {k} -> {v}")
 
@@ -269,7 +271,7 @@ class Order(StackableCmd):
 
     def postloop(self):
         try:
-            update = input("create short (TODO display info here) on current pair? [y/n]")
+            update = input(f"Do you want to {self.data['side'].upper()} the current pair (TODO display pair) w the following order (TODO display order info) ? [y/n]")
             if update not in ['n', 'no']:
                 self.apply_changes(self.data)
         except EOFError:
@@ -345,12 +347,15 @@ class Pair(StackableCmd):
         print(f"{self.usedPair} {what}: {str(wholeData[self.usedPair][what])}")
 
     # NB: ALL "OPEN" commands below will need their UPDATE & CANCEL counter parts
-    def do_long(self, type, amount, price, leverage, expiracy):
-        print(f"open {self.usedPair} long position")
-        # TODO: allow a target_close_order and a stop_sell_order to be define at the same time and simultaneously executed/canceled (ie the first one executed cancel the other one)
+    def do_long(self, arg):
+        print(f"define {self.usedPair} long order")
+
+        Long.prompt = self.prompt  # patching class prompt, as beginning of the prompt stack #TODO need to be here ?
+        t = Long()
+        t.cmdloop()
 
     def do_short(self, arg):
-        print(f"open {self.usedPair} short position")
+        print(f"define {self.usedPair} short order")
 
         Short.prompt = self.prompt  # patching class prompt, as beginning of the prompt stack #TODO need to be here ?
         t = Short()
