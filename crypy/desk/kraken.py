@@ -1,26 +1,51 @@
+import dataclasses
+
+import functools
 import typing
 import logging
+from dataclasses import dataclass, field
 
-from ..euc import ccxt
+try:
+    from ..euc import ccxt
+    from .. import config
+except (ImportError, ValueError):
+    from crypy.euc import ccxt
+    from crypy import config
 
-from . import errors
+try:
+    from . import errors, limiter
+except ImportError:
+    from crypy.desk import errors, limiter
 
-# TODO :check pydantic to verify config data
-Credentials = typing.NamedTuple(typename="Credentials", fields=[
-    ("apiKey", str),
-    ("secret", str),
-    ("uid", typing.Optional[str]),
-    ("login", typing.Optional[str]),
-    ("password", typing.Optional[str]),
-    ("twofa", typing.Optional[str]),  # 2-factor authentication (one-time password key)
-    ("privateKey", typing.Optional[str]),  # a "0x"-prefixed hexstring private key for a wallet
-    ("walletAddress", typing.Optional[str])
-])
+#
+# # TODO :check pydantic to verify config data
+# Credentials = typing.NamedTuple(typename="Credentials", fields=[
+#     ("apiKey", str),
+#     ("secret", str),
+#     ("uid", typing.Optional[str]),
+#     ("login", typing.Optional[str]),
+#     ("password", typing.Optional[str]),
+#     ("twofa", typing.Optional[str]),  # 2-factor authentication (one-time password key)
+#     ("privateKey", typing.Optional[str]),  # a "0x"-prefixed hexstring private key for a wallet
+#     ("walletAddress", typing.Optional[str])
+# ])
 
 
+#: one limiter per IP, ie. per interpreter instance.
+public_limiter = limiter.CallDropper(max_cps=1.0)
 
 
-class Kraken:
+@dataclass
+class PrivateLimiter:
+    pass
+
+
+@dataclass
+class OrderLimiter:
+    pass
+
+
+class Public:
     """
     Kraken API returning panda dataframes
 
@@ -29,32 +54,22 @@ class Kraken:
     TODO :  support different libraries as implementation.
     """
 
-    @property
-    def credentials(self):
-        logging.warning("Credentials accessed for Kraken")
-        return
+    def __init__(self, conf: config.Config = None, public=True):
+        """Initializing a public desk for kraken
+        public is ony meant to be used by private kraken desk. TODO : better design ?
+        """
+        conf = conf if conf is not None else config.Config()
+        assert 'kraken.com' in conf.sections.keys()  # preventing errors early
 
-    @credentials.setter
-    def credentials_set(self, credentials: Credentials):
-        logging.warning("Credentials loaded for Kraken")
-        for i in vars(credentials):
-            setattr(self.exchange, i)
-        # WIP : is this enough or do we need to reset the exchange ??
+        if public:
+            self.conf = conf.sections.get('kraken.com').public()
+        else:
+            self.conf = conf.sections.get('kraken.com')
 
-    def __init__(self, conf):
-        # conf = dict(config.config().items('kraken.com'))
-
-        for i in vars(Credentials):
-            if i in conf:
-                logging.warning("Credentials loaded for Kraken")
-
-        # TMP
-        conf['verbose'] = True
-
-        self.exchange = ccxt.kraken(conf)
+        self.exchange = ccxt.kraken(dataclasses.asdict(self.conf))
 
 
-    ## Public API
+    ## Properties (proxy objects for remote data)
 
     @property
     def markets(self):
@@ -62,32 +77,72 @@ class Kraken:
             self.exchange.load_markets()
         return self.exchange.markets
 
-    def load_markets(self, reload=False):
+
+
+    ## Public API
+
+    @public_limiter
+    def _load_markets(self, reload=False):
         """This calls self.exchange.fetch_markets internally"""
         self.exchange.load_markets(reload=reload)
         return self
 
-    def fetch_markets(self):
+    @public_limiter
+    def _fetch_markets(self):
         self.exchange.fetch_markets()
         return self
 
-    def fetch_currencies(self):
+    @public_limiter
+    def _fetch_currencies(self):
         return self.exchange.fetch_currencies()
 
-    def fetch_ticker(self):
+    @public_limiter
+    def _fetch_ticker(self):
         return self.exchange.fetch_ticker()
 
-    def fetch_tickers(self):
+    @public_limiter
+    def _fetch_tickers(self):
         return self.exchange.fetch_tickers()
 
-    def fetch_orderbook(self):
+    @public_limiter
+    def _fetch_orderbook(self):
         return self.exchange.fetch_orderbook()
 
-    def fetch_ohlcv(self):
+    @public_limiter
+    def _fetch_ohlcv(self):
         return self.exchange.fetch_ohlcv()
 
-    def fetch_trades(self):
+    @public_limiter
+    def _fetch_trades(self):
         return self.exchange.fetch_trades()
+
+
+class Private(Public):
+
+    @property
+    def apiKey(self):
+        logging.warning("APIKey accessed for Kraken")
+        return self.exchange.apiKey
+
+    @apiKey.setter
+    def apiKey(self, apiKey: str):
+        logging.warning("APIKey modified for Kraken")
+        setattr(self.exchange, 'apiKey', apiKey)
+        # WIP : is this enough or do we need to reset the exchange ??
+
+    @property
+    def secret(self):
+        logging.warning("Secret accessed for Kraken")
+        return self.exchange.secret
+
+    @secret.setter
+    def secret(self, secret: str):
+        logging.warning("Secret modified for Kraken")
+        setattr(self.exchange, 'secret', secret)
+        # WIP : is this enough or do we need to reset the exchange ??
+
+    def __init__(self, conf=None):
+        super().__init__(conf, public=False)
 
     @property
     def balance(self):
@@ -95,15 +150,16 @@ class Kraken:
         If this fails because we are not authenticated, provide a solution in the exception.
         """
         try:
-            self.exchange.fetch_balance()
+            self._balance = self.exchange.fetch_balance()
         except ccxt.base.errors.AuthenticationError as exc:
-
+            raise
+            # TODO : interactive login if needed
             def auth_n_retry(*args, **kwargs):
                 self.credentials_set(*args, **kwargs)
                 return self.balance
 
             raise errors.AuthenticationError(original=exc, fixer=auth_n_retry)
-        return self.exchange.balance
+        return self._balance
 
     def create_order(self):
         return self.exchange.create_order()
@@ -135,15 +191,10 @@ class Kraken:
 
 if __name__ == '__main__':
 
-    k = Kraken()
-    print(k.load_markets())
+    k = Public()
+    print(k.markets)
 
-    print(k.fetch_markets())
+    kpriv = Private()
+    print(kpriv.markets)
+    print(kpriv.balance)
 
-    c = config.config().items('kraken.com')
-
-    b = k.fetch_balance()
-    if callable(b):  # b needs extra info, authentication
-        b(c.get('apiKey'), c.get('secret'))
-
-    print(b)
