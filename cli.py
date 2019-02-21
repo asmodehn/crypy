@@ -228,6 +228,91 @@ class Truc(StackableCmd):
             print(f"-{k} -> {v}")
 
 
+class Order(StackableCmd):
+    """
+    Order class
+    abstract
+    """
+
+    struct = {
+        'side': 'long|short',
+        'type': 'limit(default)|market|stop loss|take profit',
+        'amount': 'TBD',
+        'price': 'TBD',
+        'leverage': '1->5(default)',
+        'expiracy': 'none(default)|TBD'
+    }
+
+    def __init__(self, side, prompt_apd: str = None):
+        self.data = self.struct   # copy
+        self.data['side'] = side  # TODO make self.data.side const after __init__
+        self.changes = []
+
+        def changekey(key):
+            def changeval(me, val):
+                me.changes += [(key, val)]
+                # TODO value checking
+                # TODO defaults
+            return changeval
+
+        for k in self.data.keys():
+            change_cmd = types.MethodType(changekey(k), self)
+            setattr(self, 'do_' + k, change_cmd)
+
+        super().__init__(prompt_apd if prompt_apd is None else prompt_apd)
+
+    def preloop(self):
+        # opening
+        print("--> format: ")
+        for k, v in self.data.items():
+            print(f"¤ {k} -> {v}")
+
+        super().preloop()
+
+    def postloop(self):
+        try:
+            update = input(f"Do you want to {self.data['side'].upper()} the current pair (TODO display pair) w the following order (TODO display order info) ? [y/n]")
+            if update not in ['n', 'no']:
+                self.apply_changes(self.data)
+        except EOFError:
+            print("Everything has been cancelled, input has been closed.")
+
+        super().postloop()
+
+    def apply_changes(self, mut_d):
+        for c in self.changes:
+            # apply changes
+            mut_d[c[0]] = c[1]
+
+    def do_undo(self, arg):
+        self.changes.pop()
+
+    def do_show(self, arg):
+        c = copy.deepcopy(self.data)
+        self.apply_changes(c)
+
+        for k, v in c.items():
+            print(f"¤ {k} -> {v}")
+
+
+class Short(Order):
+    """
+    Short class WIP
+    """
+
+    def __init__(self):
+        super().__init__(prompt_apd="short_defintion", side="short")
+
+
+class Long(Order):
+    """
+    Long class WIP
+    """
+
+    def __init__(self):
+        super().__init__(prompt_apd="long_defintion", side="long")
+
+
 class Pair(StackableCmd):
     def __init__(self, prompt_apd: str, usedPair: str = None):
         self.usedPair = defPAIR if usedPair is None else usedPair.upper()
@@ -259,31 +344,42 @@ class Pair(StackableCmd):
             'trades': 'trades'
         }.get(arg, "data")
 
-        print( f"{self.usedPair} {what}: {str(wholeData[self.usedPair][what])}" )
+        print(f"{self.usedPair} {what}: {str(wholeData[self.usedPair][what])}")
 
     # NB: ALL "OPEN" commands below will need their UPDATE & CANCEL counter parts
-    def do_long(self, type, amount, price, leverage, expiracy):
-        print(f"open {self.usedPair} long position")
-        # TODO: allow a target_close_order and a stop_sell_order to be define at the same time and simultaneously executed/canceled (ie the first one executed cancel the other one)
+    def do_long(self, arg):
+        print(f"define {self.usedPair} long order")
 
-    def do_short(self, arg="(type, amount, price, leverage, expiracy)"):
-        print(f"open {self.usedPair} short position")
-        print(arg)  #arg {"type": "limit", "amount": 50, "price":  100, "leverage": 5}
-        info = literal_eval(arg)
-        default = {"type": "limit", "amount": 50, "price":  100, "leverage": 5}
-        arg if arg is not None else default
-        print(info)
+        Long.prompt = self.prompt  # patching class prompt, as beginning of the prompt stack #TODO need to be here ?
+        t = Long()
+        t.cmdloop()
 
-        wholeData[self.usedPair]['orders'].append({
-            'side': 'short',
-            'type': info.type,
-            'amount': info.amount,
-            'price': info.price,
-            'leverage': info.leverage,
-            'expiracy': info.expiracy if info.expriracy is not None else 'None'
-        })
-        # TODO confirmation
-        # TODO: allow a target_close_order and a stop_buy_order to be define at the same time and simultaneously executed/canceled (ie the first one executed cancel the other one)
+    def do_short(self, arg):
+        print(f"define {self.usedPair} short order")
+
+        Short.prompt = self.prompt  # patching class prompt, as beginning of the prompt stack #TODO need to be here ?
+        t = Short()
+        t.cmdloop()
+
+        #print("new data : ")
+        #print(arg)
+
+        # print(arg)  #arg {"type": "limit", "amount": 50, "price":  100, "leverage": 5}
+        # info = literal_eval(arg)
+        # default = {"type": "limit", "amount": 50, "price":  100, "leverage": 5}
+        # arg if arg is not None else default
+        # print(info)
+        #
+        # wholeData[self.usedPair]['orders'].append({
+        #     'side': 'short',
+        #     'type': info.type,
+        #     'amount': info.amount,
+        #     'price': info.price,
+        #     'leverage': info.leverage,
+        #     'expiracy': info.expiracy if info.expriracy is not None else 'None'
+        # })
+        # # TODO confirmation
+        # # TODO: allow a target_close_order and a stop_buy_order to be define at the same time and simultaneously executed/canceled (ie the first one executed cancel the other one)
 
     def do_open_position_trailing_stop_percent(self, percent):
         print(f"define {self.usedPair} trailing stop in percent")
@@ -331,7 +427,7 @@ class Desk(cmd.Cmd):
             'trades': 'trades'
         }.get(arg, "data")
         for pair in wholeData:
-            print( f"{pair} {what}: {str(wholeData[pair][what])}" )
+            print(f"{pair} {what}: {str(wholeData[pair][what])}")
 
     def do_pair(self, pair="ETHUSD"):
         """
