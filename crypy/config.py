@@ -9,14 +9,15 @@ from dataclasses import dataclass, field
 
 sample_config_file = """
 [kraken.com]
-  apiKey = "YOUR KRAKEN API KEY"
-  secret = "YOUR KRAKEN API SECRET"
-  verbose = true
+  apiKey: YOUR_KRAKEN_API_KEY
+  secret: YOUR_KRAKEN_API_SECRET
+  timeout: 20000
+  enableRateLimit: True
 
 [testnet.bitmex.com]
-  apiKey = "YOUR BITMEX KEY"
-  secret = "YOUR BITMEX SECRET"
-  verbose = true
+  apiKey: YOUR_BITMEX_KEY
+  secret: YOUR_BITMEX_SECRET
+  verbose: True
 
 [etc.]
 
@@ -66,7 +67,7 @@ class ExchangeSection:
 
     def public(self):
         """convenience method to strip out sensitive information"""
-        return ExchangeSection(timeout=self.timeout, enableRateLimit=self.enableRateLimit)
+        return ExchangeSection(timeout=self.timeout, enableRateLimit=self.enableRateLimit, verbose=self.verbose)
 
 
 @dataclass(frozen=True)
