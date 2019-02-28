@@ -24,6 +24,9 @@ sample_config_file = """
 """
 
 
+default_filename = 'crypy.ini'
+
+
 def resolve(filename: str) -> Path:
     pathlist = [
         os.curdir,
@@ -78,7 +81,7 @@ class Config:
     Config is immutable.
     """
     filepath: typing.Optional[Path] = field(init=True,
-                                            default=resolve('crypy.ini'),
+                                            default=resolve(default_filename),
                                             repr=True)
 
     parser: configparser.ConfigParser = field(init=False,
