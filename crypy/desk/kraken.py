@@ -1,9 +1,18 @@
 import dataclasses
 
+import numpy
+import pandas
+
+import time
+
 import functools
 import typing
 import logging
 from dataclasses import dataclass, field
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
 
 try:
     from ..euc import ccxt
@@ -37,12 +46,54 @@ public_limiter = limiter.CallDropper(max_cps=1.0)
 
 @dataclass
 class PrivateLimiter:
-    pass
+    max_cps: int = 15
+    apiKey: str = 0
+    callcounter: int = 0
+    last_call: float = field(init=False)
+
+    def __call__(self, decr_period: int = 3):
+
+        def decorator(func):
+            nonlocal self
+
+            def wrapper(*args, **kwargs):
+                nonlocal self
+                # Too hacky
+                # TODO : link with limiter's measured time
+                now = time.perf_counter()
+                time_since_last_call = now - self.last_call
+                self.last_call = now
+                # We can simulate time passing on the spot (non need for background running thread).
+                self.callcounter += 1 - time_since_last_call / decr_period
+                func(*args, **kwargs)
+
+            return limiter.CallDropper(max_cps=self.max_cps)(wrapper)
+        return decorator
+
+
+#TODO : fix it, this is still WIP...
+def Tier2Limiter(apiKey):
+    return functools.partial(PrivateLimiter, max_cps=15, apiKey=apiKey)
+
+
+def Tier3Limiter(apiKey):
+    return functools.partial(PrivateLimiter, max_cps=20, apiKey=apiKey)
+
+
+def Tier4Limiter(apiKey):
+    return functools.partial(PrivateLimiter, max_cps=20, apiKey=apiKey)
 
 
 @dataclass
 class OrderLimiter:
     pass
+
+
+class OHLC(typing.NamedTuple):
+    Open: float
+    High: float
+    Low: float
+    Close: float
 
 
 class Public:
@@ -108,9 +159,17 @@ class Public:
     def _fetch_orderbook(self):
         return self.exchange.fetch_orderbook()
 
-    @public_limiter
-    def _fetch_ohlcv(self):
-        return self.exchange.fetch_ohlcv()
+    # TMP : relying on ccxt limiter for now
+    #@public_limiter
+    def fetch_ohlcv(self, symbol, timeframe='1d', since=None, limit=None, params=None):
+        params = {} if params is None else params
+        # get raw data in numpy
+        ohlcv = numpy.array(self.exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=since, limit=limit, params=params))
+
+        # filter what we need to get into pandas series/dataframes
+        df = pandas.DataFrame(data=ohlcv[:, 1:], index=ohlcv[:, 0], columns=["Open", "High", "Low", "Close", "Volume"], dtype=float)
+
+        return df
 
     @public_limiter
     def _fetch_trades(self):
@@ -192,9 +251,13 @@ class Private(Public):
 if __name__ == '__main__':
 
     k = Public()
-    print(k.markets)
+    #print(k.markets)
 
-    kpriv = Private()
-    print(kpriv.markets)
-    print(kpriv.balance)
+    k.fetch_ohlcv('ADA/CAD').plot()
+
+    plt.show()
+
+    #kpriv = Private()
+    #print(kpriv.markets)
+    #print(kpriv.balance)
 
