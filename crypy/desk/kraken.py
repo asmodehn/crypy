@@ -23,8 +23,10 @@ except (ImportError, ValueError):
 
 try:
     from . import errors, limiter
+    from .impl import ccxt as impl
 except ImportError:
     from crypy.desk import errors, limiter
+    from crypy.desk.impl import ccxt as impl
 
 #
 # # TODO :check pydantic to verify config data
@@ -110,15 +112,9 @@ class Public:
         public is ony meant to be used by private kraken desk. TODO : better design ?
         """
         conf = conf if conf is not None else config.Config()
-        assert 'kraken.com' in conf.sections.keys()  # preventing errors early
 
-        if public:
-            self.conf = conf.sections.get('kraken.com').public()
-        else:
-            self.conf = conf.sections.get('kraken.com')
-
-        self.exchange = ccxt.kraken(dataclasses.asdict(self.conf))
-
+        #self.exchange = impl.kraken(conf, public)
+        self.exchange = impl.bitmex(conf, public)
 
     ## Properties (proxy objects for remote data)
 
@@ -140,29 +136,97 @@ class Public:
 
     @public_limiter
     def _fetch_markets(self):
+
+        # {
+        #     'id':     'btcusd',   // string literal for referencing within an exchange
+        #     'symbol': 'BTC/USD',  // uppercase string literal of a pair of currencies
+        #     'base':   'BTC',      // uppercase string, base currency, 3 or more letters
+        #     'quote':  'USD',      // uppercase string, quote currency, 3 or more letters
+        #     'active': true,       // boolean, market status
+        #     'precision': {        // number of decimal digits "after the dot"
+        #         'price': 8,       // integer, might be missing if not supplied by the exchange
+        #         'amount': 8,      // integer, might be missing if not supplied by the exchange
+        #         'cost': 8,        // integer, very few exchanges actually have it
+        #     },
+        #     'limits': {           // value limits when placing orders on this market
+        #         'amount': {
+        #             'min': 0.01,  // order amount should be > min
+        #             'max': 1000,  // order amount should be < max
+        #         },
+        #         'price': { ... }, // same min/max limits for the price of the order
+        #         'cost':  { ... }, // same limits for order cost = price * amount
+        #     },
+        #     'info':      { ... }, // the original unparsed market info from the exchange
+        # }
+
         self.exchange.fetch_markets()
         return self
 
-    @public_limiter
+    #@public_limiter
     def _fetch_currencies(self):
-        return self.exchange.fetch_currencies()
+        currencies = self.exchange.fetch_currencies()
 
-    @public_limiter
-    def _fetch_ticker(self):
-        return self.exchange.fetch_ticker()
+        return currencies
 
+    #@public_limiter
+    def _fetch_ticker(self, symbol, params=None):
+        params = {} if params is None else params
+
+        # {
+        #     'symbol':        string symbol of the market ('BTC/USD', 'ETH/BTC', ...)
+        #     'info':        { the original non-modified unparsed reply from exchange API },
+        #     'timestamp':     int (64-bit Unix Timestamp in milliseconds since Epoch 1 Jan 1970)
+        #     'datetime':      ISO8601 datetime string with milliseconds
+        #     'high':          float, // highest price
+        #     'low':           float, // lowest price
+        #     'bid':           float, // current best bid (buy) price
+        #     'bidVolume':     float, // current best bid (buy) amount (may be missing or undefined)
+        #     'ask':           float, // current best ask (sell) price
+        #     'askVolume':     float, // current best ask (sell) amount (may be missing or undefined)
+        #     'vwap':          float, // volume weighed average price
+        #     'open':          float, // opening price
+        #     'close':         float, // price of last trade (closing price for current period)
+        #     'last':          float, // same as `close`, duplicated for convenience
+        #     'previousClose': float, // closing price for the previous period
+        #     'change':        float, // absolute change, `last - open`
+        #     'percentage':    float, // relative change, `(change/open) * 100`
+        #     'average':       float, // average price, `(last + open) / 2`
+        #     'baseVolume':    float, // volume of base currency traded for last 24 hours
+        #     'quoteVolume':   float, // volume of quote currency traded for last 24 hours
+        # }
+
+        ticker = self.exchange.fetch_ticker(symbol, params=params)
+
+        return ticker
+
+    # TODO : maybe not available for kraken... to verify
     @public_limiter
     def _fetch_tickers(self):
         return self.exchange.fetch_tickers()
 
     @public_limiter
     def _fetch_orderbook(self):
-        return self.exchange.fetch_orderbook()
+        book = self.exchange.fetch_orderbook()
+
+        return book
 
     # TMP : relying on ccxt limiter for now
     #@public_limiter
     def fetch_ohlcv(self, symbol, timeframe='1d', since=None, limit=None, params=None):
         params = {} if params is None else params
+
+        # [
+        #     [
+        #         1504541580000, // UTC timestamp in milliseconds, integer
+        #         4235.4,        // (O)pen price, float
+        #         4240.6,        // (H)ighest price, float
+        #         4230.0,        // (L)owest price, float
+        #         4230.7,        // (C)losing price, float
+        #         37.72941911    // (V)olume (in terms of the base currency), float
+        #     ],
+        #     ...
+        # ]
+
         # get raw data in numpy
         ohlcv = numpy.array(self.exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=since, limit=limit, params=params))
 
@@ -171,9 +235,31 @@ class Public:
 
         return df
 
-    @public_limiter
-    def _fetch_trades(self):
-        return self.exchange.fetch_trades()
+    # TMP : relying on ccxt limiter for now
+    #@public_limiter
+    def _fetch_trades(self, symbol, since=None, limit=None, params=None):
+        params = {} if params is None else params
+
+        # [
+        #     {
+        #         'info':       { ... },                  // the original decoded JSON as is
+        #         'id':        '12345-67890:09876/54321', // string trade id
+        #         'timestamp':  1502962946216,            // Unix timestamp in milliseconds
+        #         'datetime':  '2017-08-17 12:42:48.000', // ISO8601 datetime with milliseconds
+        #         'symbol':    'ETH/BTC',                 // symbol
+        #         'order':     '12345-67890:09876/54321', // string order id or undefined/None/null
+        #         'type':      'limit',                   // order type, 'market', 'limit' or undefined/None/null
+        #         'side':      'buy',                     // direction of the trade, 'buy' or 'sell'
+        #         'price':      0.06917684,               // float price in quote currency
+        #         'amount':     1.5,                      // amount of base currency
+        #     },
+        #     ...
+        # ]
+
+
+        trades = self.exchange.fetch_trades(symbol, since=since, limit=limit, params=params)
+
+        return trades
 
 
 class Private(Public):
@@ -230,7 +316,24 @@ class Private(Public):
         return self.exchange.fetch_order()
 
     def fetch_orders(self):
-        return self.exchange.fetch_orders()
+        # {
+        #     'bids': [
+        #         [ price, amount ], // [ float, float ]
+        #         [ price, amount ],
+        #         ...
+        #     ],
+        #     'asks': [
+        #         [ price, amount ],
+        #         [ price, amount ],
+        #         ...
+        #     ],
+        #     'timestamp': 1499280391811, // Unix Timestamp in milliseconds (seconds * 1000)
+        #     'datetime': '2017-07-05T18:47:14.692Z', // ISO8601 datetime string with milliseconds
+        # }
+
+        orders = self.exchange.fetch_orders()
+
+        return orders
 
     def fetch_open_orders(self):
         return self.exchange.fetch_open_orders()
@@ -251,13 +354,26 @@ class Private(Public):
 if __name__ == '__main__':
 
     k = Public()
-    #print(k.markets)
+    print(k.markets)
 
-    k.fetch_ohlcv('ADA/CAD').plot()
+    #k.fetch_ohlcv('ADA/CAD').plot()
+    #plt.show()
 
-    plt.show()
+    #res = k._fetch_ticker('ADA/CAD')
+    #print(res)
 
-    #kpriv = Private()
+
+    # res = k._fetch_currencies()
+    # print(res)
+
+    # res = k._fetch_trades('ADA/CAD')
+    #
+    # print(res)
+
+
+
+    kpriv = Private()
     #print(kpriv.markets)
     #print(kpriv.balance)
 
+    kpriv.fetch_orders()
