@@ -6,6 +6,12 @@ import dataclasses
 import click
 
 from crypy.config import Config, resolve, default_filename
+from crypy.desk.repl import repl
+from crypy.desk.exchange import exchange
+
+"""Entrypoint for the desk subpackage
+Manages one (currently) exchange, via CLI
+"""
 
 
 @click.group()
@@ -13,7 +19,6 @@ from crypy.config import Config, resolve, default_filename
 @click.pass_context
 def cli(ctx, config):
     conf = Config(config) if config is not None else Config()
-
     ctx.obj = conf
 
 
@@ -30,9 +35,11 @@ def bitmex(obj, public):
         exconf = obj.sections.get('bitmex.com')
 
     # we never display the key and secret
-    click.echo(dataclasses.asdict(exconf.public()))
+    click.echo(exconf)
 
-    return dataclasses.asdict(exconf)
+    x = exchange(hostname='bitmex.com', **dataclasses.asdict(exconf))
+
+    print(x.markets)
 
 
 @click.command()
@@ -47,10 +54,11 @@ def kraken(obj, public):
     else:
         exconf = obj.sections.get('kraken.com')
 
-    # we never display the key and secret
-    click.echo(dataclasses.asdict(exconf.public()))
+    click.echo(exconf)
 
-    return dataclasses.asdict(exconf)
+    x = exchange(hostname='kraken.com', **dataclasses.asdict(exconf))
+
+    print(x.markets)
 
 
 cli.add_command(kraken)

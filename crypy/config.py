@@ -67,10 +67,12 @@ class ExchangeSection:
     timeout: int = 30000
     enableRateLimit: bool = True
     verbose: bool = True
+    impl: str = 'ccxt'
 
     def public(self):
         """convenience method to strip out sensitive information"""
-        return ExchangeSection(timeout=self.timeout, enableRateLimit=self.enableRateLimit, verbose=self.verbose)
+        return ExchangeSection(timeout=self.timeout, enableRateLimit=self.enableRateLimit, verbose=self.verbose,
+                               impl=self.impl)
 
 
 @dataclass(frozen=True)
