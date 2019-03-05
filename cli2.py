@@ -121,8 +121,8 @@ def Desk():
     pass
 
 @click.command()
-@click.argument('what')
-def list(what):
+@click.argument('arg')
+def list(arg):
     """display all followed pairs informations
 
     @param:
