@@ -135,8 +135,10 @@ class Desk(object):
         pair = defPAIR if pair is '' else pair.upper()
         #Pair(prompt_apd=pair, usedPair=pair)
 
+
+### CLI Commands
 @click.group()
-@click.option('--exchange', default=defEXCHANGE)
+@click.option('-e', '--exchange', default=defEXCHANGE, type=str, show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
     click.echo(f"Trading on {exchange}")
@@ -156,16 +158,28 @@ def list(ctx, what):
     """
     ctx.do_list(what)
 
-@cli.command()
-@click.argument('pair', default=defPAIR)
-@click.pass_obj
-def pair(ctx, pair):
-    """
-    Uses a specific pair.
-    Choose one of [ETHUSD, ETHEUR]
-    """
-    click.echo(f'pair {pair} used')
 
+
+
+
+### CLI PAIR Sub Commands
+@cli.group()
+@click.option('-t', '--ticker', default=defPAIR, type=str, show_default=True)
+@click.pass_obj
+def pair(ctx, ticker):
+    """
+    Trading a specific pair. Choose one of [ETHUSD, ETHEUR]
+    """
+    click.echo(f"PAIR: {ticker}")
+    #ctx.obj = Pair(ticker)
+
+@pair.command()
+@click.pass_obj
+def short(ctx):
+    """
+    Shorting the pair
+    """
+    click.echo(f'shorting')
 #Desk.add_command(list)
 #Desk.add_command(pair)
 
