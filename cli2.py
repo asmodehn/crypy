@@ -116,13 +116,36 @@ wholeData = {
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
-@click.group()
-def Desk():
-    pass
+class Desk(object):
+    def __init__(self, exchange=defEXCHANGE):
+        self.exchange = (exchange or defEXCHANGE)
 
-@click.command()
-@click.argument('arg')
-def list(arg):
+    def do_list(self, arg):
+        arg = "data" if arg is '' else arg
+        what = {
+            'data': 'data',
+            'orders': 'orders',
+            'positions': 'positions',
+            'trades': 'trades'
+        }.get(arg, "data")
+        for pair in wholeData:
+            print(f"{pair} {what}: {str(wholeData[pair][what])}")
+
+    def do_pair(self, pair="ETHUSD"):
+        pair = defPAIR if pair is '' else pair.upper()
+        #Pair(prompt_apd=pair, usedPair=pair)
+
+@click.group()
+@click.option('--exchange', default=defEXCHANGE)
+@click.pass_context
+def cli(ctx, exchange):
+    click.echo(f"Trading on {exchange}")
+    ctx.obj = Desk(exchange)
+
+@cli.command()
+@click.argument('what', default='data')
+@click.pass_obj
+def list(ctx, what):
     """display all followed pairs informations
 
     @param:
@@ -131,26 +154,24 @@ def list(arg):
         positions: for positions
         trades: for past trades
     """
-    arg = "data" if arg is '' else arg
-    what = {
-        'data': 'data',
-        'orders': 'orders',
-        'positions': 'positions',
-        'trades': 'trades'
-    }.get(arg, "data")
-    for pair in wholeData:
-        print(f"{pair} {what}: {str(wholeData[pair][what])}")    
+    ctx.do_list(what)
 
-@click.command()
-def pair():
+@cli.command()
+@click.argument('pair', default=defPAIR)
+@click.pass_obj
+def pair(ctx, pair):
     """
-    Uses a specific pair. Choose one of [ETHUSD, ETHEUR]
+    Uses a specific pair.
+    Choose one of [ETHUSD, ETHEUR]
     """
-    click.echo('pair used')
+    click.echo(f'pair {pair} used')
 
-Desk.add_command(list)
-Desk.add_command(pair)
+#Desk.add_command(list)
+#Desk.add_command(pair)
 
 if __name__ == '__main__':
-    Desk()
+    cli()
 
+
+#Example USAGE ATM:
+#python cli2.py --exchange %exchange_name% list [data|orders|positions|trades]
