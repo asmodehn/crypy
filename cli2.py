@@ -2,9 +2,6 @@ import functools
 
 import click
 
-import copy
-import types
-
 defEXCHANGE = "kraken"
 defPAIR = "ETHUSD"
 
@@ -27,6 +24,7 @@ wholeData = {
                 'p/l': 800
             }],
         'orders': [{
+                'id': '12312155156156',
                 'side': 'short',
                 'type': 'limit',
                 'amount': 30,
@@ -35,6 +33,7 @@ wholeData = {
                 'expiracy': '1 hour'
             },
             {
+                'id': '2212155156156',
                 'side': 'short',
                 'type': 'limit',
                 'amount': 35,
@@ -42,6 +41,7 @@ wholeData = {
                 'leverage': 5
             }],
         'trades': [{
+                'id': '1212155156156',
                 'side': 'short',
                 'type': 'limit',
                 'amount': 35,
@@ -50,6 +50,7 @@ wholeData = {
                 'datetime': '2018/05/02 15:32:12'
             },
             {
+                'id': '1212155156157',
                 'side': 'long',
                 'type': 'limit',
                 'amount': 35,
@@ -74,6 +75,7 @@ wholeData = {
                 'p/l': 800
             }],
         'orders': [{
+                'id': '1212155176156',
                 'side': 'short',
                 'type': 'limit',
                 'amount': 30,
@@ -82,6 +84,7 @@ wholeData = {
                 'expiracy': '1 hour'
             },
             {
+                'id': '1214155156156',
                 'side': 'short',
                 'type': 'limit',
                 'amount': 34,
@@ -89,6 +92,7 @@ wholeData = {
                 'leverage': 10
             }],
         'trades': [{
+                'id': '1219155156156',
                 'side': 'short',
                 'type': 'limit',
                 'amount': 35,
@@ -97,6 +101,7 @@ wholeData = {
                 'datetime': '2018/05/02 16:32:12'
             },
             {
+                'id': '1422155156156',
                 'side': 'long',
                 'type': 'limit',
                 'amount': 35,
@@ -180,7 +185,8 @@ class Order():
 
     def execute(self):
         #TODO pass order to wholeData
-        pass
+        #TODO real orderID
+        return 'OU47YA-GYBTO-SRS2IJ'        
 
 
 ### CLI PAIR Sub Commands
@@ -195,15 +201,16 @@ def pair(ctx, ticker):
     ctx.ticker = ticker
 
 
-def order_options(fun):
+def order_options(ctx):
     click.option('-ot', '--order-type', default='limit',
-                  type=click.Choice(['limit', 'market', 'stop loss', 'take profit']), show_default=True)(fun)
-    click.option('-lv', '--leverage', type=click.IntRange(1, 5), default=1, show_default=True)(fun)
+                  type=click.Choice(['limit', 'market', 'stop loss', 'take profit']), show_default=True)(ctx)
+    click.option('-lv', '--leverage', type=click.IntRange(1, 5), default=1, show_default=True)(ctx)
     click.option('-exp', '--expiracy', type=str, default='none',
-                 show_default=True)(fun)  # TODO use it #TODO handle datetime format #(https://click.palletsprojects.com/en/7.x/options/#callbacks-for-validation)
-    click.argument('amount_price', nargs=2, type=float)(fun)
+                 show_default=True)(ctx)  # TODO use it #TODO handle datetime format
+                                          # #(https://click.palletsprojects.com/en/7.x/options/#callbacks-for-validation)
+    click.argument('amount_price', nargs=2, type=float)(ctx)
 
-    return fun
+    return ctx
 
 
 # OR use functools.partial
@@ -211,42 +218,39 @@ def make_order(ticker, order_type, leverage, expiracy, amount, price):
 
     def partial(side):
         nonlocal ticker, order_type, leverage, expiracy, amount, price
-        return Order(ticker=ticker, side=side, order_type=order_type, leverage=leverage, expiracy=expiracy, amount=amount, price=price)
+
+        click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?')
+
+        order = Order(ticker=ticker, side=side, order_type=order_type, leverage=leverage, expiracy=expiracy, amount=amount, price=price)
+        order.showData()
+
+        click.confirm('Please confirm', abort=True) #die here if No is selected (default) otherwise continue code below
+
+        return order.execute()
 
     return partial
 
 
 @pair.command()
 @order_options
-#@click.confirmation_option(prompt='Short?')
 @click.pass_obj
 def short(ctx, order_type, leverage, expiracy, amount_price):
     """
     Shorting a pair
     """
-    click.echo(f'Do you want to execute the following short on {ctx.ticker} ?')
-    order = make_order(ticker = ctx.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side="short")
-    order.showData()
-
-    click.confirm('Please confirm', abort=True) #die here if No is selected (default) otherwise continue code below
-    order.execute()
+    side = "short"
+    print( make_order(ticker = ctx.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side) )
 
 
 @pair.command()
 @order_options
-#@click.confirmation_option(prompt='Long?')
 @click.pass_obj
 def long(ctx, order_type, leverage, expiracy, amount_price):
     """
-    Shorting a pair
+    Longing a pair
     """
-    click.echo(f'Do you want to execute the following short on {ctx.ticker} ?')
-    order = make_order(ticker=ctx.ticker, order_type=order_type, leverage=leverage, expiracy=expiracy,
-                  amount=amount_price[0], price=amount_price[1])(side="long")
-    order.showData()
-
-    click.confirm('Please confirm', abort=True)  # die here if No is selected (default) otherwise continue code below
-    order.execute()
+    side = "long"
+    print( make_order(ticker = ctx.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side) )
 
 
 
