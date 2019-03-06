@@ -177,28 +177,31 @@ class Order():
         self.data['expiracy'] = expiracy 
         self.data['amount'] = amount 
         self.data['price'] = price 
-        #TODO use TICKER
+        self.ticker = ticker
 
-    def showData(self):
+    def showData(self): 
         for k, v in self.data.items():
             print(f"¤ {k} -> {v}")
 
     def execute(self):
         #TODO pass order to wholeData
         #TODO real orderID
-        return 'OU47YA-GYBTO-SRS2IJ'        
+        #TODO link to exchange ops
+        self.data['id'] = 'OU47YA-GYBTO-SRS2IJ'
+        wholeData[self.ticker]['orders'].append(self.data)
+        return self.data['id']
 
 
 ### CLI PAIR Sub Commands
 @cli.group()
 @click.option('-t', '--ticker', default=defPAIR, type=str, show_default=True)  #TODO define valid pair tickers per exchange
-@click.pass_obj
+@click.pass_context
 def pair(ctx, ticker):
     """
     Trading a specific pair defined by its ticker
     """
     click.echo(f"PAIR: {ticker}")
-    ctx.ticker = ticker
+    ctx.obj.ticker = ticker
 
 
 def order_options(ctx):
@@ -233,25 +236,30 @@ def make_order(ticker, order_type, leverage, expiracy, amount, price):
 
 @pair.command()
 @order_options
-@click.pass_obj
+@click.pass_context
 def short(ctx, order_type, leverage, expiracy, amount_price):
     """
     Shorting a pair
     """
     side = "short"
-    print( make_order(ticker = ctx.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side) )
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side))
+    
+    #TEMP DEBUG
+    ctx.invoke(list, what='orders')
 
 
 @pair.command()
 @order_options
-@click.pass_obj
+@click.pass_context
 def long(ctx, order_type, leverage, expiracy, amount_price):
     """
     Longing a pair
     """
     side = "long"
-    print( make_order(ticker = ctx.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side) )
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side))
 
+    #TEMP DEBUG
+    ctx.invoke(list, what='orders')
 
 
 if __name__ == '__main__':
