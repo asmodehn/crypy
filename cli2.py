@@ -123,8 +123,8 @@ class Desk(object):
             print(f"{pair} {what}: {str(wholeData[pair][what])}")
 
 
-### CLI Commands
-@click.group()
+### CLI Commands (Root)
+@click.group(context_settings=CONTEXT_SETTINGS)
 @click.option('-e', '--exchange', default=defEXCHANGE, type=str, show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
