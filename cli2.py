@@ -1,6 +1,7 @@
 import functools
 
 import click
+import datetime
 
 defEXCHANGE = "kraken"
 defPAIR = "ETHUSD"
@@ -153,6 +154,45 @@ def list(ctx, what):
     """
     ctx.do_list(what)
 
+    
+@cli.command()
+@click.pass_context
+def balance(ctx):
+    """
+    Get user balance TODO (private data)
+    """
+    print(">> TODO <<")
+
+@cli.command()
+@click.pass_context
+def trade_balance(ctx):
+    """
+    Get user trade balance TODO (private data)
+    """
+    print(">> TODO <<")
+
+
+@cli.command()
+@click.option('-a', '--assets', type=str, default='all', show_default=True, help='comma delimited list of assets to restrict output to')
+@click.option('-t', '--type', type=click.Choice(['all', 'deposit', 'withdrawal', 'trade', 'margin']), default='all', show_default=True, help="restrict type of ledger to retrieve")
+@click.pass_context
+def ledger(ctx, assets, type):
+    """
+    Get user asset ledger TODO (private data)
+    """
+    print(">> TODO <<")
+
+
+@cli.command()
+@click.option('-f', '--from-address', type=str, show_default=True, help="address to withdrawal from")
+@click.option('-t', '--to-address', type=str, show_default=True, help="address to deposit to")
+@click.option('-a', '--amount', type=float, default='all', show_default=True, help="amount to transfer")
+@click.pass_context
+def transfer(ctx, from_address, to_address, amount):
+    """
+    Transfer from address to address TODO (private data)
+    """
+    print(">> TODO <<")
 
 
 class Order():
@@ -161,6 +201,7 @@ class Order():
     abstract
     """
     struct = {
+        'id' : 'TBD',
         'side': 'long|short',
         'type': 'limit(default)|market|stop loss|take profit',
         'amount': 'TBD',
@@ -170,7 +211,7 @@ class Order():
     }
 
     def __init__(self, side, ticker, order_type, leverage, expiracy, amount, price):
-        self.data = self.struct   # copy
+        self.data = self.struct   # Copy
         self.data['side'] = side  # TODO make self.data.side immutable after __init__
         self.data['type'] = order_type 
         self.data['leverage'] = leverage 
@@ -184,12 +225,16 @@ class Order():
             print(f"¤ {k} -> {v}")
 
     def execute(self):
-        #TODO pass order to wholeData
-        #TODO real orderID
-        #TODO link to exchange ops
-        self.data['id'] = 'OU47YA-GYBTO-SRS2IJ'
+        #TODO link to exchange execute operation
+        self.data['id'] = 'OU47YA-GYBTO-SRS2IJ' #TODO real orderID
         wholeData[self.ticker]['orders'].append(self.data)
         return self.data['id']
+
+    @staticmethod
+    def cancel(order_ids):
+        #TODO
+        print (order_ids)
+        print(">> TODO <<")
 
 
 ### CLI PAIR Sub Commands
@@ -260,6 +305,53 @@ def long(ctx, order_type, leverage, expiracy, amount_price):
 
     #TEMP DEBUG
     ctx.invoke(list, what='orders')
+
+
+@pair.command()
+@click.argument('ids', nargs=-1, type=str)
+@click.pass_context
+def cancel_order(ctx, ids):
+    """
+    Pair cancel order(s) TODO
+    """
+    order = Order.cancel(order_ids=ids)
+
+@pair.command()
+@click.option('-d', '--depth', type=int, default=7, show_default=True)
+@click.pass_context
+def orderbook(ctx, depth):
+    """
+    Pair orderbook TODO
+    """
+    print(">> TODO <<")
+
+@pair.command()
+#TODO on of those two options XOR
+@click.option('-d', '--depth', type=int, default=25, show_default=True)
+@click.option('-s', '--since', type=datetime, show_default=True)
+@click.pass_context
+def last_trades(ctx, depth, since):
+    """
+    Pair list of last trades TODO
+    """
+    print(">> TODO <<")
+
+@pair.command()
+@click.option('-i', '--interval', default=1, type=click.Choice(['1', '5', '15', '30', '60', '240', '1440', '10800', '21600']), show_default=True, help="interval in minutes")
+
+#TODO on of those two options XOR
+@click.option('-d', '--depth', type=int, default=50, show_default=True)
+@click.option('-s', '--since', type=datetime, show_default=True)
+
+@click.pass_context
+def ohlcv(ctx, interval, depth, since):
+    """
+    Pair ohlcv data for interval in minutes TODO
+    """
+    print(">> TODO <<")
+    pass
+
+
 
 
 if __name__ == '__main__':
