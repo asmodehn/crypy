@@ -187,6 +187,8 @@ def list(ctx, what):
 def exit(ctx):
     """exit app by using :exit, :q, :quit"""
     print("to exit just type :exit, :q, :quit")
+    #ctx.invoke(repl.exit)
+    #TODO find a way to run the fucking cmd
     
 @cli.command()
 @click.pass_context
