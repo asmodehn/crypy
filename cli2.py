@@ -161,7 +161,7 @@ def cli(ctx, exchange):
         }
 
         # launching repl
-        crepl(ctx, prompt_kwargs=prompt_kwargs)
+        crepl(ctx, prompt_kwargs=prompt_kwargs, allow_system_commands = False)
         
 
     # otherwise invoke the specified subcommand (default behavior)
