@@ -4,8 +4,7 @@ import sys
 
 import click
 from click_repl import repl as crepl
-from prompt_toolkit.history import FileHistory
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+import prompt_toolkit
 
 import datetime
 
@@ -142,20 +141,26 @@ class Desk(object):
 @click.option('-e', '--exchange', default=defEXCHANGE, type=str, show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
-    click.echo(f"-== TRADING CLI ==-")
-    click.echo(f"EXCHANGE: {exchange}")
-
     # starting repl if no command passed
     if ctx.invoked_subcommand is None:
+        prompt_toolkit.shortcuts.clear()
+        click.echo(f"-== TRADING CLI ==-")
+        click.echo(f"EXCHANGE: {exchange}")
+        #ctx.invoke(help)  #TODO invoke help cmd on startup
+
+        #Setup the prompt
         #https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
         prompt_kwargs = {
             'message': u'crypy> ',
-            'history': FileHistory(os.path.join(sys.path[0], 'crypy.hist')), #TODO don't use os.path
-            'auto_suggest': AutoSuggestFromHistory(),
-            'wrap_lines': True
+            'history': prompt_toolkit.history.FileHistory(os.path.join(sys.path[0], 'crypy.hist')), #TODO don't use os.path
+            'auto_suggest': prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),
+            'wrap_lines': True,
+            'bottom_toolbar': [
+                #('class:bottom-toolbar-logo', ' Ϟ ') #TODO setup
+            ]
         }
 
-        # launching repl #TODO invoke help cmd on startup
+        # launching repl
         crepl(ctx, prompt_kwargs=prompt_kwargs)
 
 
