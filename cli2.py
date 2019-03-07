@@ -146,7 +146,7 @@ def cli(ctx, exchange):
         prompt_toolkit.shortcuts.clear()
         click.echo(f"-== TRADING CLI ==-")
         click.echo(f"EXCHANGE: {exchange}")
-        #ctx.invoke(help)  #TODO invoke help cmd on startup
+        #ctx.invoke(help) #TODO invoke help cmd on startup
 
         #Setup the prompt
         #https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
@@ -162,7 +162,7 @@ def cli(ctx, exchange):
 
         # launching repl
         crepl(ctx, prompt_kwargs=prompt_kwargs)
-
+        
 
     # otherwise invoke the specified subcommand (default behavior)
     else:
@@ -182,6 +182,11 @@ def list(ctx, what):
     """
     ctx.do_list(what)
 
+@cli.command()
+@click.pass_context
+def exit(ctx):
+    """exit app by using :exit, :q, :quit"""
+    print("to exit just type :exit, :q, :quit")
     
 @cli.command()
 @click.pass_context
@@ -261,7 +266,7 @@ class Order():
     @staticmethod
     def cancel(order_ids):
         #TODO
-        print (order_ids)
+        print(order_ids)
         print(">> TODO <<")
 
 
