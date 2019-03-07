@@ -1,6 +1,12 @@
-import functools
+#import functools
+import os
+import sys
 
 import click
+from click_repl import repl as crepl
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+
 import datetime
 
 defEXCHANGE = "kraken"
@@ -132,13 +138,30 @@ class Desk(object):
 
 
 ### CLI Commands (Root)
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('-e', '--exchange', default=defEXCHANGE, type=str, show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
     click.echo(f"-== TRADING CLI ==-")
     click.echo(f"EXCHANGE: {exchange}")
-    ctx.obj = Desk(exchange)
+
+    # starting repl if no command passed
+    if ctx.invoked_subcommand is None:
+        #https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
+        prompt_kwargs = {
+            'message': u'crypy> ',
+            'history': FileHistory(os.path.join(sys.path[0], 'crypy.hist')), #TODO don't use os.path
+            'auto_suggest': AutoSuggestFromHistory(),
+            'wrap_lines': True
+        }
+
+        # launching repl #TODO invoke help cmd on startup
+        crepl(ctx, prompt_kwargs=prompt_kwargs)
+
+
+    # otherwise invoke the specified subcommand (default behavior)
+    else:
+        ctx.obj = Desk(exchange)
 
 @cli.command()
 @click.argument('what', default='data')
