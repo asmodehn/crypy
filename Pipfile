@@ -19,10 +19,10 @@ requests = "*"
 plotly = "*"
 click-repl = "*"
 #influxdb = {editable = true,git = "ssh://git@github.com/asmodehn/influxdb-python.git",path = "."}
-pystore = "*"
-pint = "*"
-ptterm = "*"
-vulcano = "*"
+#pystore = "*"
+#pint = "*"
+#ptterm = "*"
+#vulcano = "*"
 
 [dev-packages]
 
