@@ -23,8 +23,15 @@ click-repl = "*"
 #pint = "*"
 #ptterm = "*"
 #vulcano = "*"
+black = "*"
+pydantic = "*"
+hypothesis = "*"
+mpmath = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true
