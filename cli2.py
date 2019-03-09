@@ -146,7 +146,7 @@ wholeData = {
     }
 }
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--h', '--help'])
 
 class Desk(object):
     def __init__(self, conf: config.Config = None, exchange=defEXCHANGE):
@@ -176,7 +176,7 @@ class Desk(object):
     def do_fetchOHLCV(self, ticker, timeframe, since, limit, customParams = {}):        
         exg = self.exchange
         if not exg.has['fetchOHLCV']:
-            return 'ohlcv() not available for this exchange'
+            return 'fetchOHLCV() not available for this exchange'
     
         #Get data
         #TODO: exg.loadMarkets(True) #Do we need to (re)load market everytime ?
@@ -203,6 +203,18 @@ class Desk(object):
         tohlcvlist = tohlcvlist[::-1]
 
         return tohlcvlist
+
+    def do_fetchBalance(self, customParams = {}):
+        exg = self.exchange
+        if not exg.has['fetchBalance']:
+            return 'fetchBalance() not available for this exchange'
+
+        try:
+            balance = exg.fetchBalance(params = customParams)
+            return balance
+        except ccxt.BaseError as error:
+            #return str(type(error)) + ' ' + str(error.args)
+            return error.args[0]
 
 
 ### CLI Commands (Root)
@@ -263,9 +275,9 @@ def exit(ctx):
 @click.pass_context
 def balance(ctx):
     """
-    Get user balance TODO (private data)
+    Get user balance (private data)
     """
-    print(">> TODO <<")
+    print( ctx.obj.do_fetchBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -455,13 +467,13 @@ def ohlcv(ctx, timeframe, since, limit):
 
 class Utils:
     def formatTS(msts):
-        """Format a UNIX timestamp in millesecond to truncated ISO8601 format."""
+        """Format a UNIX timestamp in millesecond to truncated ISO8601 format"""
         #TODO look into import arrow https://github.com/crsmithdev/arrow
         return datetime.datetime.utcfromtimestamp(msts/1000).strftime("%Y-%m-%d %H:%M:%S")
 
 
     def ppJSON(res):
-        """Pretty-print the JSON result from the API."""
+        """Pretty-print a JSON result"""
         if res is not None:
             print(json.dumps(res, indent=2))
 
