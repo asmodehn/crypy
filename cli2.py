@@ -157,7 +157,7 @@ class Desk(object):
         if exgData['test']:
             self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
         
-        self.exchange.loadMarkets(true) #preload market data. NB: forced reloading w reload=True param, do we want to always do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
+        self.exchange.loadMarkets(True) #preload market data. NB: forced reloading w reload=True param, do we want to always do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
         #print (dir (self.exchange))  #List exchange available methods
         #Exchange properties https://github.com/ccxt/ccxt/wiki/Manual#exchange-properties
@@ -207,7 +207,7 @@ class Desk(object):
 
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
-@click.option('-e', '--exchange', default=defEXCHANGE, type=str, show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
+@click.option('-e', '--exchange', default=defEXCHANGE, type=click.Choice(dict(exchange_data).keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
     # starting repl if no command passed
