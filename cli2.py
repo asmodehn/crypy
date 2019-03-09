@@ -6,10 +6,24 @@ import click
 from click_repl import repl as crepl
 import prompt_toolkit
 
+#from dataclasses import asdict
+
 import datetime
+
+try:
+    from ..euc import ccxt
+    from .. import config
+except (ImportError, ValueError):
+    from crypy.euc import ccxt
+    from crypy import config
 
 defEXCHANGE = "kraken"
 defPAIR = "ETHUSD"
+exchange_url = {
+    "kraken": "kraken.com",
+    "bitmex": "bitmex.com",
+    "testbitmex": "testnet.bitmex.com"
+}
 
 #nb: will be gotten from the bot in the end
 #nb2 link to exchange first
@@ -121,8 +135,11 @@ wholeData = {
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 class Desk(object):
-    def __init__(self, exchange=defEXCHANGE):
-        self.exchange = (exchange or defEXCHANGE)
+    def __init__(self, conf: config.Config = None, exchange=defEXCHANGE):
+        self.config = conf if conf is not None else config.Config()
+        self.exchangeName = (exchange or defEXCHANGE)
+        exg_url = exchange_url[self.exchangeName] #TODO check existance
+        self.exchange = getattr(ccxt, (exchange or defEXCHANGE))(self.config.sections[exg_url].asdict()) #TODO check exchange id existing in CCXT
 
     def do_list(self, arg):
         arg = "data" if arg is '' else arg
@@ -151,7 +168,7 @@ def cli(ctx, exchange):
         #Setup the prompt
         #https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
         prompt_kwargs = {
-            'message': u'crypy> ',
+            'message': f"{exchange}> ",
             'history': prompt_toolkit.history.FileHistory(os.path.join(sys.path[0], 'crypy.hist')), #TODO don't use os.path
             'auto_suggest': prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),
             'wrap_lines': True,
@@ -166,7 +183,7 @@ def cli(ctx, exchange):
 
     # otherwise invoke the specified subcommand (default behavior)
     else:
-        ctx.obj = Desk(exchange)
+        ctx.obj = Desk(exchange=exchange)
 
 @cli.command()
 @click.argument('what', default='data')
@@ -372,7 +389,7 @@ def last_trades(ctx, depth, since):
     print(">> TODO <<")
 
 @pair.command()
-@click.option('-i', '--interval', default=1, type=click.Choice(['1', '5', '15', '30', '60', '240', '1440', '10800', '21600']), show_default=True, help="interval in minutes")
+@click.option('-i', '--interval', default='1', type=click.Choice(['1', '5', '15', '30', '60', '240', '1440', '10800', '21600']), show_default=True, help="interval in minutes")
 
 #TODO on of those two options XOR
 @click.option('-d', '--depth', type=int, default=50, show_default=True)
