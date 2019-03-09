@@ -36,7 +36,7 @@ class Exchange:
 
 exchange_host_id_mapping = {
     "kraken": ["kraken.com"],
-    "bitmex": ["testnet.bitmex.com", "bitmex.com"],
+    "bitmex": ["testnet.bitmex.com", "bitmex.com"]
 }
 
 
