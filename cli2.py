@@ -212,6 +212,20 @@ class Desk(object):
         try:
             balance = exg.fetchBalance(params = customParams)
             return balance
+
+        except ccxt.BaseError as error:
+            #return str(type(error)) + ' ' + str(error.args)
+            return error.args[0]
+
+    def do_fetchLedger( self, code, since, limit, customParams = {}):
+        exg = self.exchange
+        if not 'fetchLedger' in exg.has or not exg.has['fetchLedger']:
+            return 'fetchLedger() not available for this exchange'
+
+        try:
+            ledger = exg.fetchLedger(code = code, since = since, limit = limit, params = customParams)
+            return ledger
+
         except ccxt.BaseError as error:
             #return str(type(error)) + ' ' + str(error.args)
             return error.args[0]
@@ -291,12 +305,15 @@ def trade_balance(ctx):
 @cli.command()
 @click.option('-a', '--assets', type=str, default='all', show_default=True, help='comma delimited list of assets to restrict output to')
 @click.option('-t', '--type', type=click.Choice(['all', 'deposit', 'withdrawal', 'trade', 'margin']), default='all', show_default=True, help="restrict type of ledger to retrieve")
+@click.option('-s', '--since', type=datetime, show_default=True)
+@click.option('-l', '--limit', type=int, default=25, show_default=True)
 @click.pass_context
-def ledger(ctx, assets, type):
+def ledger(ctx, assets, type, since, limit):
     """
-    Get user asset ledger TODO (private data)
+    Get user asset ledger (private data)
     """
-    print(">> TODO <<")
+    #todo use assets and type params (possible w ccxt ? maybe through "code" arg ?)
+    print( ctx.obj.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
 
 
 @cli.command()
@@ -456,11 +473,10 @@ def orderbook(ctx, limit):
     print(orderbook)
 
 @pair.command()
-#TODO on of those two options XOR
-@click.option('-l', '--limit', type=int, default=25, show_default=True)
 @click.option('-s', '--since', type=datetime, show_default=True)
+@click.option('-l', '--limit', type=int, default=25, show_default=True)
 @click.pass_context
-def last_trades(ctx, limit, since):
+def last_trades(ctx, since, limit):
     """
     Pair list of last trades TODO
     """
