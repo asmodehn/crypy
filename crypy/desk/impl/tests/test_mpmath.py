@@ -63,7 +63,10 @@ def test_mpinterval_identity_equality(mpij):
     assert mpjk == mpij
 
 
-@given(mpf=MPFloat.strategy(), val=hypothesis.strategies.floats(allow_nan=False, allow_infinity=False))
+@given(
+    mpf=MPFloat.strategy(),
+    val=hypothesis.strategies.floats(allow_nan=False, allow_infinity=False),
+)
 @settings(verbosity=Verbosity.verbose)
 def test_mpfloat_add_sub(mpf, val):
 
@@ -83,7 +86,10 @@ def test_mpfloat_add_sub(mpf, val):
     assert sub_raw_raw == sub_mp_raw == sub_raw_mp == sub_mp_mp
 
 
-@given(mpf=MPFuzzyFloat.strategy(), val=hypothesis.strategies.floats(allow_nan=False, allow_infinity=False))
+@given(
+    mpf=MPFuzzyFloat.strategy(),
+    val=hypothesis.strategies.floats(allow_nan=False, allow_infinity=False),
+)
 @settings(verbosity=Verbosity.verbose)
 def test_mpfuzzyfloat_add_sub(mpf, val):
 
@@ -103,7 +109,7 @@ def test_mpfuzzyfloat_add_sub(mpf, val):
     assert sub_raw_raw == sub_mp_raw == sub_raw_mp == sub_mp_mp
 
 
-@given(mpia=MPInterval.strategy(), mpib=MPInterval.strategy(),)
+@given(mpia=MPInterval.strategy(), mpib=MPInterval.strategy())
 @settings(verbosity=Verbosity.verbose)
 def test_mpinterval_add_sub(mpia, mpib):
 

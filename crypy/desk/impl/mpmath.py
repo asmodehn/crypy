@@ -25,20 +25,34 @@ pydantic is not involved in the type enforcement at this level.
 """
 
 
+class MPFloatException(CrypyException):
+    pass
+
+
 class MPFloat(mpmath.mpf):
     """
     A Basic Multiprecision float (in the mpmath sense)
     """
+
     @staticmethod
-    def strategy(min_value: float=None, max_value: float=None, exclude_min: bool=False, exclude_max=False, allow_infinity=False):
-        return hypothesis.strategies.builds(MPFloat, hypothesis.strategies.floats(
-            allow_nan=False,
-            min_value=min_value,
-            max_value=max_value,
-            exclude_min=exclude_min,
-            exclude_max=exclude_max,
-            allow_infinity=allow_infinity,  # careful https://github.com/HypothesisWorks/hypothesis/issues/1859
-        ))
+    def strategy(
+        min_value: float = None,
+        max_value: float = None,
+        exclude_min: bool = False,
+        exclude_max=False,
+        allow_infinity=False,
+    ):
+        return hypothesis.strategies.builds(
+            MPFloat,
+            hypothesis.strategies.floats(
+                allow_nan=False,
+                min_value=min_value,
+                max_value=max_value,
+                exclude_min=exclude_min,
+                exclude_max=exclude_max,
+                allow_infinity=allow_infinity,  # careful https://github.com/HypothesisWorks/hypothesis/issues/1859
+            ),
+        )
 
     @classmethod
     def __get_validators__(cls):
@@ -46,7 +60,14 @@ class MPFloat(mpmath.mpf):
 
     @classmethod
     def validate(cls, v):
-        return mpmath.mpf(v)
+        try:
+            return mpmath.mpf(v)
+        except Exception as exc:
+            raise MPFloatException(original=exc)
+
+
+class MPFuzzyFloatException(CrypyException):
+    pass
 
 
 class MPFuzzyFloat(mpmath.mpf):
@@ -54,16 +75,26 @@ class MPFuzzyFloat(mpmath.mpf):
     A Fuzzy Float, ie, a float that is somewhere in an interval,
     and this interval is managed during arithmetic computation.
     """
+
     @staticmethod
-    def strategy(min_value: float=None, max_value: float=None, exclude_min: bool=False, exclude_max=False, allow_infinity=False):
-        return hypothesis.strategies.builds(MPFloat, hypothesis.strategies.floats(
-            allow_nan=False,
-            min_value=min_value,
-            max_value=max_value,
-            exclude_min=exclude_min,
-            exclude_max=exclude_max,
-            allow_infinity=allow_infinity,  # careful https://github.com/HypothesisWorks/hypothesis/issues/1859
-        ))
+    def strategy(
+        min_value: float = None,
+        max_value: float = None,
+        exclude_min: bool = False,
+        exclude_max=False,
+        allow_infinity=False,
+    ):
+        return hypothesis.strategies.builds(
+            MPFloat,
+            hypothesis.strategies.floats(
+                allow_nan=False,
+                min_value=min_value,
+                max_value=max_value,
+                exclude_min=exclude_min,
+                exclude_max=exclude_max,
+                allow_infinity=allow_infinity,  # careful https://github.com/HypothesisWorks/hypothesis/issues/1859
+            ),
+        )
 
     @classmethod
     def __get_validators__(cls):
@@ -71,7 +102,14 @@ class MPFuzzyFloat(mpmath.mpf):
 
     @classmethod
     def validate(cls, v: float):
-        return mpmath.iv.mpf(str(v))
+        try:
+            return mpmath.iv.mpf(str(v))
+        except Exception as exc:
+            raise MPFuzzyFloatException(original=exc)
+
+
+class MPIntervalException(CrypyException):
+    pass
 
 
 class MPInterval(mpmath.iv.mpf):
@@ -83,16 +121,20 @@ class MPInterval(mpmath.iv.mpf):
     @hypothesis.strategies.composite
     def strategy(draw):
         low_bound = draw(hypothesis.strategies.floats(allow_nan=False))
-        high_bound = draw(hypothesis.strategies.floats(allow_nan=False, min_value=low_bound))
-        return MPInterval((low_bound, high_bound))
+        high_bound = draw(
+            hypothesis.strategies.floats(allow_nan=False, min_value=low_bound)
+        )
+        return MPInterval(mpmath.mpi(low_bound, high_bound))
 
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
 
     @classmethod
-    def validate(cls, b: typing.Tuple[float, float]):
+    def validate(cls, b: mpmath.iv.mpf):
         """enforce needing a pair to define an interval"""
-        assert b[1] >= b[0]  # TODO : can interval be inverted (inverting the meaning of being "in" to "out") ??
-        return mpmath.mpi(b[0], b[1])
-
+        try:
+            # assert b.a <= b.b  # TODO : can interval be inverted (inverting the meaning of being "in" to "out") ??
+            return mpmath.mpi(b.a, b.b)
+        except Exception as exc:
+            raise MPIntervalException(original=exc)
