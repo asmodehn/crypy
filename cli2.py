@@ -1,12 +1,14 @@
 #import functools
 import os
 import sys
+import json
 
 import click
 from click_repl import repl as crepl
 import prompt_toolkit
 
 #from dataclasses import asdict
+#from collections import OrderedDict
 
 import datetime
 
@@ -17,13 +19,25 @@ except (ImportError, ValueError):
     from crypy.euc import ccxt
     from crypy import config
 
-defEXCHANGE = "kraken"
+defEXCHANGE = "testnet.bitmex"
 defPAIR = "ETHUSD"
-exchange_url = {
-    "kraken": "kraken.com",
-    "bitmex": "bitmex.com",
-    "testbitmex": "testnet.bitmex.com"
+exchange_data = {
+    "kraken": { 'confSection': "kraken.com", 'ccxtName': "kraken"},
+    "bitmex": { 'confSection': "bitmex.com", 'ccxtName': "bitmex"},
+    "testnet.bitmex": { 'confSection': "testnet.bitmex.com", 'ccxtName': "bitmex", 'test': True }
 }
+pair_symbol = {
+    'ETHUSD': 'ETH/USD',
+    'ETHEUR': 'ETH/EUR',
+    'BTCUSD': 'BTC/USD',
+    'BTCEUR': 'BTC/EUR',
+    'ETHBTC': 'ETH/BTC'
+    #TBC
+} #todo handle multiple symbol for pair if needed
+
+time_second = {
+    '1m': 60, '3m': 180, '15m': 900, '30m': 1800, '1h': 3600, '2H': 7200, '4H': 14400, '6H': 21600, '12H': 43200, '1D': 86400, '3D': 259200, '1W': 604800, '1M': 2592000
+    } #warning 1M == 30days
 
 #nb: will be gotten from the bot in the end
 #nb2 link to exchange first
@@ -138,8 +152,15 @@ class Desk(object):
     def __init__(self, conf: config.Config = None, exchange=defEXCHANGE):
         self.config = conf if conf is not None else config.Config()
         self.exchangeName = (exchange or defEXCHANGE)
-        exg_url = exchange_url[self.exchangeName] #TODO check existance
-        self.exchange = getattr(ccxt, (exchange or defEXCHANGE))(self.config.sections[exg_url].asdict()) #TODO check exchange id existing in CCXT
+        exgData = exchange_data[self.exchangeName] #TODO check existance
+        self.exchange = getattr(ccxt, exgData['ccxtName'])(self.config.sections[exgData['confSection']].asdict()) #TODO check exchange id existing in CCXT
+        if exgData['test']:
+            self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
+        
+        self.exchange.loadMarkets(True) #preload market data. NB: forced reloading w reload=True param, do we want to always do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
+
+        #print (dir (self.exchange))  #List exchange available methods
+        #Exchange properties https://github.com/ccxt/ccxt/wiki/Manual#exchange-properties
 
     def do_list(self, arg):
         arg = "data" if arg is '' else arg
@@ -152,10 +173,41 @@ class Desk(object):
         for pair in wholeData:
             print(f"{pair} {what}: {str(wholeData[pair][what])}")
 
+    def do_fetchOHLCV(self, ticker, timeframe, since, limit, customParams = {}):        
+        exg = self.exchange
+        if not exg.has['fetchOHLCV']:
+            return 'ohlcv() not available for this exchange'
+    
+        #Get data
+        #TODO: exg.loadMarkets(True) #Do we need to (re)load market everytime ?
+        tohlcv = exg.fetchOHLCV(symbol = ticker, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
+
+        #format data into a list
+        # initialize a list to store the parsed ohlc data
+        tohlcvlist = []
+
+        for period in tohlcv:
+            # Initialize an OrderedDict to garantee the column order
+            tohlcvdict = dict()
+            tohlcvdict["CloseTime"] = Utils.formatTS(period[0])
+            tohlcvdict["Open"] = period[1]
+            tohlcvdict["High"] = period[2]
+            tohlcvdict["Low"] = period[3]
+            tohlcvdict["Close"] = period[4]
+            tohlcvdict["Volume"] = period[5] #volume in base currency
+            tohlcvlist.append(tohlcvdict)
+
+        if not tohlcvlist:
+            return
+        # Reverse trade list to have the most recent interval at the top
+        tohlcvlist = tohlcvlist[::-1]
+
+        return tohlcvlist
+
 
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
-@click.option('-e', '--exchange', default=defEXCHANGE, type=str, show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
+@click.option('-e', '--exchange', default=defEXCHANGE, type=click.Choice(dict(exchange_data).keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
     # starting repl if no command passed
@@ -369,9 +421,9 @@ def cancel_order(ctx, ids):
     order = Order.cancel(order_ids=ids)
 
 @pair.command()
-@click.option('-d', '--depth', type=int, default=7, show_default=True)
+@click.option('-l', '--limit', type=int, default=7, show_default=True)
 @click.pass_context
-def orderbook(ctx, depth):
+def orderbook(ctx, limit):
     """
     Pair orderbook TODO
     """
@@ -379,32 +431,39 @@ def orderbook(ctx, depth):
 
 @pair.command()
 #TODO on of those two options XOR
-@click.option('-d', '--depth', type=int, default=25, show_default=True)
+@click.option('-l', '--limit', type=int, default=25, show_default=True)
 @click.option('-s', '--since', type=datetime, show_default=True)
 @click.pass_context
-def last_trades(ctx, depth, since):
+def last_trades(ctx, limit, since):
     """
     Pair list of last trades TODO
     """
     print(">> TODO <<")
 
 @pair.command()
-@click.option('-i', '--interval', default='1', type=click.Choice(['1', '5', '15', '30', '60', '240', '1440', '10800', '21600']), show_default=True, help="interval in minutes")
-
-#TODO on of those two options XOR
-@click.option('-d', '--depth', type=int, default=50, show_default=True)
+@click.option('-tf', '--timeframe', default='1m', type=click.Choice(['1m', '3m', '15m', '30m', '1h', '2H', '4H', '6H', '12H', '1D', '3D', '1W', '1M']), show_default=True, help="timeframe in minutes") #TODO choices must depend on exchange i suppose
 @click.option('-s', '--since', type=datetime, show_default=True)
-
+@click.option('-l', '--limit', type=int, default=50, show_default=True)
 @click.pass_context
-def ohlcv(ctx, interval, depth, since):
+def ohlcv(ctx, timeframe, since, limit):
     """
-    Pair ohlcv data for interval in minutes TODO
+    Pair ohlcv data for interval in minutes
     """
-    print(">> TODO <<")
-    pass
+    #print(pair_symbol[ctx.obj.ticker])
+    print( ctx.obj.do_fetchOHLCV(ticker = pair_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    
+
+class Utils:
+    def formatTS(msts):
+        """Format a UNIX timestamp in millesecond to truncated ISO8601 format."""
+        #TODO look into import arrow https://github.com/crsmithdev/arrow
+        return datetime.datetime.utcfromtimestamp(msts/1000).strftime("%Y-%m-%d %H:%M:%S")
 
 
-
+    def ppJSON(res):
+        """Pretty-print the JSON result from the API."""
+        if res is not None:
+            print(json.dumps(res, indent=2))
 
 if __name__ == '__main__':
     cli()
