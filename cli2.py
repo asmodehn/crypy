@@ -173,13 +173,13 @@ class Desk(object):
         for pair in wholeData:
             print(f"{pair} {what}: {str(wholeData[pair][what])}")
 
-    def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):        
+    def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
         exg = self.exchange
-        if not exg.has['fetchOHLCV']:
+        if not 'fetchOHLCV' in exg.has or not exg.has['fetchOHLCV']:
             return 'fetchOHLCV() not available for this exchange'
     
         #Get data
-        #TODO: exg.loadMarkets(True) #Do we need to (re)load market everytime ?
+        #TODO: exg.loadMarkets(True) #Do we need to (re)load market everytime ? #TODO handle exception
         tohlcv = exg.fetchOHLCV(symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
 
         #format data into a list
@@ -206,7 +206,7 @@ class Desk(object):
 
     def do_fetchBalance(self, customParams = {}):
         exg = self.exchange
-        if not exg.has['fetchBalance']:
+        if not 'fetchBalance' in exg.has or not exg.has['fetchBalance']:
             return 'fetchBalance() not available for this exchange'
 
         try:
@@ -372,7 +372,7 @@ class Order():
     @staticmethod
     def fetchL2OrderBook(symbol, limit):
         exg = click.get_current_context().obj.exchange
-        if not exg.has['fetchL2OrderBook']:
+        if not 'fetchL2OrderBook' in exg.has or not exg.has['fetchL2OrderBook']:
             return 'fetchL2OrderBook() not available for this exchange'
         
         try:
@@ -492,7 +492,7 @@ def ohlcv(ctx, timeframe, since, limit):
     Pair ohlcv data for interval in minutes
     """
     #print(ticker_symbol[ctx.obj.ticker])
-    print( ctx.obj.do_fetchOHLCV(ticker = ticker_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    print( ctx.obj.do_fetchOHLCV(symbol = ticker_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
     
 
 class Utils:
