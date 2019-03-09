@@ -5,7 +5,7 @@ import typing
 from pathlib import Path, PosixPath
 import configparser
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 
 sample_config_file = """
 [kraken.com]
@@ -73,6 +73,10 @@ class ExchangeSection:
         """convenience method to strip out sensitive information"""
         return ExchangeSection(timeout=self.timeout, enableRateLimit=self.enableRateLimit, verbose=self.verbose,
                                impl=self.impl)
+
+    def asdict(self):
+        """NB: DOESN'T strip out sensitive information"""
+        return asdict(self)
 
 
 @dataclass(frozen=True)
