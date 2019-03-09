@@ -26,7 +26,7 @@ exchange_data = {
     "bitmex": { 'confSection': "bitmex.com", 'ccxtName': "bitmex"},
     "testnet.bitmex": { 'confSection': "testnet.bitmex.com", 'ccxtName': "bitmex", 'test': True }
 }
-pair_symbol = {
+ticker_symbol = {
     'ETHUSD': 'ETH/USD',
     'ETHEUR': 'ETH/EUR',
     'BTCUSD': 'BTC/USD',
@@ -173,14 +173,14 @@ class Desk(object):
         for pair in wholeData:
             print(f"{pair} {what}: {str(wholeData[pair][what])}")
 
-    def do_fetchOHLCV(self, ticker, timeframe, since, limit, customParams = {}):        
+    def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):        
         exg = self.exchange
         if not exg.has['fetchOHLCV']:
             return 'fetchOHLCV() not available for this exchange'
     
         #Get data
         #TODO: exg.loadMarkets(True) #Do we need to (re)load market everytime ?
-        tohlcv = exg.fetchOHLCV(symbol = ticker, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
+        tohlcv = exg.fetchOHLCV(symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
 
         #format data into a list
         # initialize a list to store the parsed ohlc data
@@ -352,6 +352,19 @@ class Order():
         print(order_ids)
         print(">> TODO <<")
 
+    @staticmethod
+    def fetchL2OrderBook(symbol, limit):
+        exg = click.get_current_context().obj.exchange
+        if not exg.has['fetchL2OrderBook']:
+            return 'fetchL2OrderBook() not available for this exchange'
+        
+        try:
+            orderbook = exg.fetchL2OrderBook(symbol = symbol, limit = limit) #TODO better format i guess
+            return orderbook
+        except ccxt.BaseError as error:
+            #return str(type(error)) + ' ' + str(error.args)
+            return error.args[0]
+
 
 ### CLI PAIR Sub Commands
 @cli.group()
@@ -437,9 +450,10 @@ def cancel_order(ctx, ids):
 @click.pass_context
 def orderbook(ctx, limit):
     """
-    Pair orderbook TODO
+    Pair L2 orderbook
     """
-    print(">> TODO <<")
+    orderbook = Order.fetchL2OrderBook(symbol = ticker_symbol[ctx.obj.ticker], limit = limit)
+    print(orderbook)
 
 @pair.command()
 #TODO on of those two options XOR
@@ -461,8 +475,8 @@ def ohlcv(ctx, timeframe, since, limit):
     """
     Pair ohlcv data for interval in minutes
     """
-    #print(pair_symbol[ctx.obj.ticker])
-    print( ctx.obj.do_fetchOHLCV(ticker = pair_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    #print(ticker_symbol[ctx.obj.ticker])
+    print( ctx.obj.do_fetchOHLCV(ticker = ticker_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
     
 
 class Utils:
@@ -479,3 +493,4 @@ class Utils:
 
 if __name__ == '__main__':
     cli()
+    
