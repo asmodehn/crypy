@@ -19,12 +19,12 @@ except (ImportError, ValueError):
     from crypy.euc import ccxt
     from crypy import config
 
-defEXCHANGE = "kraken"
+defEXCHANGE = "testnet.bitmex"
 defPAIR = "ETHUSD"
-exchange_url = {
-    "kraken": "kraken.com",
-    "bitmex": "bitmex.com",
-    "testbitmex": "testnet.bitmex.com"
+exchange_data = {
+    "kraken": { 'confSection': "kraken.com", 'ccxtName': "kraken"},
+    "bitmex": { 'confSection': "bitmex.com", 'ccxtName': "bitmex"},
+    "testnet.bitmex": { 'confSection': "testnet.bitmex.com", 'ccxtName': "bitmex", 'test': True }
 }
 pair_symbol = {
     'ETHUSD': 'ETH/USD',
@@ -152,9 +152,15 @@ class Desk(object):
     def __init__(self, conf: config.Config = None, exchange=defEXCHANGE):
         self.config = conf if conf is not None else config.Config()
         self.exchangeName = (exchange or defEXCHANGE)
-        exg_url = exchange_url[self.exchangeName] #TODO check existance
-        self.exchange = getattr(ccxt, (exchange or defEXCHANGE))(self.config.sections[exg_url].asdict()) #TODO check exchange id existing in CCXT
+        exgData = exchange_data[self.exchangeName] #TODO check existance
+        self.exchange = getattr(ccxt, exgData['ccxtName'])(self.config.sections[exgData['confSection']].asdict()) #TODO check exchange id existing in CCXT
+        if exgData['test']:
+            self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
+        
+        self.exchange.loadMarkets(true) #preload market data. NB: forced reloading w reload=True param, do we want to always do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
+
         #print (dir (self.exchange))  #List exchange available methods
+        #Exchange properties https://github.com/ccxt/ccxt/wiki/Manual#exchange-properties
 
     def do_list(self, arg):
         arg = "data" if arg is '' else arg
