@@ -15,7 +15,7 @@ except (ImportError, ValueError):
 
 class PydanticConfig:
     pass
-    #arbitrary_types_allowed = True
+    # arbitrary_types_allowed = True
 
 
 class BoundedPriceError(CrypyException):
@@ -32,10 +32,10 @@ class BoundedPrice:
     @hypothesis.strategies.composite
     def strategy(draw):
         b = draw(MPInterval.strategy())
-        hypothesis.assume(b.a != -float('inf'))
-        hypothesis.assume(b.b != float('inf'))
+        hypothesis.assume(b.a != -float("inf"))
+        hypothesis.assume(b.b != float("inf"))
         v = draw(MPFloat.strategy(min_value=float(b.a), max_value=float(b.b)))
-        return BoundedPrice(value = v, bounds = b)
+        return BoundedPrice(value=v, bounds=b)
 
     value: MPFloat
     # delegating implementation to mpmath
@@ -64,4 +64,3 @@ if __name__ == "__main__":
     p = BoundedPrice(value=34.56, bounds=[33.5, 35.7])
     assert type(p) is BoundedPrice
     print(p)
-
