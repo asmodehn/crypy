@@ -163,7 +163,7 @@ class Desk(object):
         filename = 'exg_' + exchange_data[self.exchangeName]['confSection'] + '.txt'
         file = open( filename, 'w')
         print ("### HAS ###", file = file)
-        print (dir(self.exchange.has), file = file)
+        print (str(self.exchange.has), file = file) #TODO: Fix this doesn't store has dict inside the file but instead dict methods?
         print ("\r\n### FULL EXCHANGE DATA ###", file = file)
         print (dir(self.exchange), file = file)  #List exchange available methods
         file.close()
@@ -212,6 +212,7 @@ class Desk(object):
 
         return tohlcvlist
 
+    #TODO maybe use this for every ccxt fetch function and not only balance one (w functools.partial?) ?
     def _XXXbalance(self, ccxtMethod, customParams = {}):
         exg = self.exchange
         if not ccxtMethod in exg.has or not exg.has[ccxtMethod]:
