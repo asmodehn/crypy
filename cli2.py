@@ -28,6 +28,7 @@ exchange_data = {
 }
 ticker_symbol = {
     'ETHUSD': 'ETH/USD',
+    'XBTUSD': 'XBT/USD',
     'ETHEUR': 'ETH/EUR',
     'BTCUSD': 'BTC/USD',
     'BTCEUR': 'BTC/EUR',
@@ -163,7 +164,9 @@ class Desk(object):
         filename = 'exg_' + exchange_data[self.exchangeName]['confSection'] + '.txt'
         file = open( filename, 'w')
         print ("### HAS ###", file = file)
-        print (str(self.exchange.has), file = file) #TODO: Fix this doesn't store has dict inside the file but instead dict methods?
+        print (str(self.exchange.has).replace(', ', ', \r\n'), file = file)
+        print ("\r\n### SYMBOLS ###", file = file)
+        print (str(self.exchange.symbols).replace(', ', ', \r\n'), file = file)
         print ("\r\n### FULL EXCHANGE DATA ###", file = file)
         print (dir(self.exchange), file = file)  #List exchange available methods
         file.close()
@@ -180,15 +183,25 @@ class Desk(object):
         }.get(arg, "data")
         for pair in wholeData:
             print(f"{pair} {what}: {str(wholeData[pair][what])}")
+    
+    def _ccxtFetchXXX(self, ccxtMethod, **kwargs):
+        """ccxt fetchXXX wrapper"""
+        exg = self.exchange
+        if not ccxtMethod in exg.has or not exg.has[ccxtMethod]:
+            return f'{ccxtMethod} not available for this exchange'
+
+        try:
+            #Do we need to (re)load market everytime to get accurate data?
+            ret = getattr(exg, ccxtMethod)(**kwargs)
+            return ret
+
+        except ccxt.BaseError as error:
+            return error.args[0]
 
     def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
-        exg = self.exchange
-        if not 'fetchOHLCV' in exg.has or not exg.has['fetchOHLCV']:
-            return 'fetchOHLCV() not available for this exchange'
-    
         #Get data
-        #TODO: exg.loadMarkets(True) #Do we need to (re)load market everytime ? #TODO handle exception
-        tohlcv = exg.fetchOHLCV(symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
+        tohlcv = self._ccxtFetchXXX('fetchOHLCV', symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
+        #TODO handle exception in return
 
         #format data into a list
         # initialize a list to store the parsed ohlc data
@@ -212,43 +225,19 @@ class Desk(object):
 
         return tohlcvlist
 
-    #TODO maybe use this for every ccxt fetch function and not only balance one (w functools.partial?) ?
-    def _XXXbalance(self, ccxtMethod, customParams = {}):
-        exg = self.exchange
-        if not ccxtMethod in exg.has or not exg.has[ccxtMethod]:
-            return f'{ccxtMethod} not available for this exchange'
-
-        try:
-            balance = getattr(exg, ccxtMethod)(params = customParams)
-            return balance
-
-        except ccxt.BaseError as error:
-            return error.args[0]
-
     def do_fetchBalance(self, customParams):
-        return self._XXXbalance('fetchBalance', customParams)
-    def do_fetchTotalBalance(self, customParams = {}):
-        return self._XXXbalance('fetchTotalBalance', customParams)
-    def do_fetchFreeBalance(self, customParams = {}):
-        return self._XXXbalance('fetchFreeBalance', customParams)
-    def do_fetchUsedBalance(self, customParams = {}):
-        return self._XXXbalance('fetchUsedBalance', customParams)
-    def do_fetchPartialBalance(self, customParams = {}):
-        return self._XXXbalance('fetchPartialBalance', customParams)
+        return self._ccxtFetchXXX('fetchBalance', customParams = customParams)
+    def do_fetchTotalBalance(self, customParams):
+        return self._ccxtFetchXXX('fetchTotalBalance', customParams = customParams)
+    def do_fetchFreeBalance(self, customParams):
+        return self._ccxtFetchXXX('fetchFreeBalance', customParams = customParams)
+    def do_fetchUsedBalance(self, customParams):
+        return self._ccxtFetchXXX('fetchUsedBalance', customParams = customParams)
+    def do_fetchPartialBalance(self, customParams):
+        return self._ccxtFetchXXX('fetchPartialBalance', customParams = customParams)
 
-    def do_fetchLedger( self, code, since, limit, customParams = {}):
-        exg = self.exchange
-        if not 'fetchLedger' in exg.has or not exg.has['fetchLedger']:
-            return 'fetchLedger() not available for this exchange'
-
-        try:
-            ledger = exg.fetchLedger(code = code, since = since, limit = limit, params = customParams)
-            return ledger
-
-        except ccxt.BaseError as error:
-            #return str(type(error)) + ' ' + str(error.args)
-            return error.args[0]
-
+    def do_fetchLedger(self, code, since, limit, customParams):
+        return self._ccxtFetchXXX('fetchLedger', code = code, since = since, limit = limit, customParams = customParams)
 
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
@@ -421,16 +410,8 @@ class Order():
 
     @staticmethod
     def fetchL2OrderBook(symbol, limit):
-        exg = click.get_current_context().obj.exchange
-        if not 'fetchL2OrderBook' in exg.has or not exg.has['fetchL2OrderBook']:
-            return 'fetchL2OrderBook() not available for this exchange'
-        
-        try:
-            orderbook = exg.fetchL2OrderBook(symbol = symbol, limit = limit) #TODO better format i guess
-            return orderbook
-        except ccxt.BaseError as error:
-            #return str(type(error)) + ' ' + str(error.args)
-            return error.args[0]
+        orderbook = click.get_current_context().obj._ccxtFetchXXX('fetchL2OrderBook', symbol = 'ETH/USD', limit = limit)
+        return orderbook #TODO better format i guess
 
 
 ### CLI PAIR Sub Commands
@@ -519,8 +500,7 @@ def orderbook(ctx, limit):
     """
     Pair L2 orderbook
     """
-    orderbook = Order.fetchL2OrderBook(symbol = ticker_symbol[ctx.obj.ticker], limit = limit)
-    print(orderbook)
+    print( Order.fetchL2OrderBook(symbol = ticker_symbol[ctx.obj.ticker], limit = limit) )
 
 @pair.command()
 @click.option('-s', '--since', type=datetime, show_default=True)
