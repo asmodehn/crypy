@@ -159,8 +159,13 @@ class Desk(object):
         
         self.exchange.loadMarkets(True) #preload market data. NB: forced reloading w reload=True param, do we want to always do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
-        #print (dir (self.exchange))  #List exchange available methods
+    def do_getExchangeInfo(self):
+        filename = 'exg_' + exchange_data[self.exchangeName]['confSection'] + '.txt'
+        file = open( filename, 'w')
+        print (dir(self.exchange), file = file)  #List exchange available methods
+        file.close()
         #Exchange properties https://github.com/ccxt/ccxt/wiki/Manual#exchange-properties
+        return 'Exchange data printed to ' + filename
 
     def do_list(self, arg):
         arg = "data" if arg is '' else arg
@@ -262,6 +267,12 @@ def cli(ctx, exchange):
     # otherwise invoke the specified subcommand (default behavior)
     else:
         ctx.obj = Desk(exchange=exchange)
+
+@cli.command()
+@click.pass_obj
+def exchange_info(ctx):
+    """print exchange info to file exg_%EXCHANGE_NAME%.txt"""
+    print(ctx.do_getExchangeInfo())
 
 @cli.command()
 @click.argument('what', default='data')
