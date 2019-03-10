@@ -162,6 +162,9 @@ class Desk(object):
     def do_getExchangeInfo(self):
         filename = 'exg_' + exchange_data[self.exchangeName]['confSection'] + '.txt'
         file = open( filename, 'w')
+        print ("### HAS ###", file = file)
+        print (dir(self.exchange.has), file = file)
+        print ("\r\n### FULL EXCHANGE DATA ###", file = file)
         print (dir(self.exchange), file = file)  #List exchange available methods
         file.close()
         #Exchange properties https://github.com/ccxt/ccxt/wiki/Manual#exchange-properties
