@@ -209,18 +209,28 @@ class Desk(object):
 
         return tohlcvlist
 
-    def do_fetchBalance(self, customParams = {}):
+    def _XXXbalance(self, ccxtMethod, customParams = {}):
         exg = self.exchange
-        if not 'fetchBalance' in exg.has or not exg.has['fetchBalance']:
-            return 'fetchBalance() not available for this exchange'
+        if not ccxtMethod in exg.has or not exg.has[ccxtMethod]:
+            return f'{ccxtMethod} not available for this exchange'
 
         try:
-            balance = exg.fetchBalance(params = customParams)
+            balance = getattr(exg, ccxtMethod)(params = customParams)
             return balance
 
         except ccxt.BaseError as error:
-            #return str(type(error)) + ' ' + str(error.args)
             return error.args[0]
+
+    def do_fetchBalance(self, customParams):
+        return self._XXXbalance('fetchBalance', customParams)
+    def do_fetchTotalBalance(self, customParams = {}):
+        return self._XXXbalance('fetchTotalBalance', customParams)
+    def do_fetchFreeBalance(self, customParams = {}):
+        return self._XXXbalance('fetchFreeBalance', customParams)
+    def do_fetchUsedBalance(self, customParams = {}):
+        return self._XXXbalance('fetchUsedBalance', customParams)
+    def do_fetchPartialBalance(self, customParams = {}):
+        return self._XXXbalance('fetchPartialBalance', customParams)
 
     def do_fetchLedger( self, code, since, limit, customParams = {}):
         exg = self.exchange
@@ -307,11 +317,35 @@ def balance(ctx):
 
 @cli.command()
 @click.pass_context
-def trade_balance(ctx):
+def balance_total(ctx):
     """
-    Get user trade balance TODO (private data)
+    Get user total balance (private data)
     """
-    print(">> TODO <<")
+    print( ctx.obj.do_fetchTotalBalance( customParams = {}) ) #todo customparams for exchange if needed
+
+@cli.command()
+@click.pass_context
+def balance_free(ctx):
+    """
+    Get user free balance (private data)
+    """
+    print( ctx.obj.do_fetchFreeBalance( customParams = {}) ) #todo customparams for exchange if needed
+
+@cli.command()
+@click.pass_context
+def balance_used(ctx):
+    """
+    Get user used balance (private data)
+    """
+    print( ctx.obj.do_fetchUsedBalance( customParams = {}) ) #todo customparams for exchange if needed
+
+@cli.command()
+@click.pass_context
+def balance_partial(ctx):
+    """
+    Get user partial? balance (private data)
+    """
+    print( ctx.obj.do_fetchPartialBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 
 @cli.command()
