@@ -154,7 +154,7 @@ class Desk(object):
         self.exchangeName = (exchange or defEXCHANGE)
         exgData = exchange_data[self.exchangeName] #TODO check existance
         self.exchange = getattr(ccxt, exgData['ccxtName'])(self.config.sections[exgData['confSection']].asdict()) #TODO check exchange id existing in CCXT
-        if exgData['test']:
+        if 'test' in exgData and exgData['test']:
             self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
         
         self.exchange.loadMarkets(True) #preload market data. NB: forced reloading w reload=True param, do we want to always do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
@@ -247,6 +247,7 @@ def cli(ctx, exchange):
         click.echo(f"-== TRADING CLI ==-")
         click.echo(f"EXCHANGE: {exchange}")
         #ctx.invoke(help) #TODO invoke help cmd on startup
+        ctx.exchangeName = exchange #will be available from ctx.parent.exchangeName after repl launched
 
         #Setup the prompt
         #https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
@@ -266,7 +267,7 @@ def cli(ctx, exchange):
 
     # otherwise invoke the specified subcommand (default behavior)
     else:
-        ctx.obj = Desk(exchange=exchange)
+        ctx.obj = Desk(exchange=ctx.parent.exchangeName)
 
 @cli.command()
 @click.pass_obj
