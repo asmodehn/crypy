@@ -22,7 +22,7 @@ from crypy.desk.order import Order
 Manages one (currently) exchange, via CLI
 """
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--h', '--help'])
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--h', '--help', '?'])
 
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
@@ -167,7 +167,7 @@ def pair(ctx, ticker):
 
 def order_options(ctx):
     click.option('-ot', '--order-type', default='limit',
-                  type=click.Choice(['limit', 'market', 'stop loss', 'take profit']), show_default=True)(ctx)
+                  type=click.Choice(['limit', 'market']), show_default=True)(ctx)
     click.option('-lv', '--leverage', type=click.IntRange(1, 5), default=1, show_default=True)(ctx)
     click.option('-exp', '--expiracy', type=str, default='none',
                  show_default=True)(ctx)  # TODO use it #TODO handle datetime format
@@ -185,12 +185,11 @@ def make_order(ticker, order_type, leverage, expiracy, amount, price):
 
         click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?')
 
-        order = Order(symbol=gv.ticker_symbol(ticker), side=side, order_type=order_type, leverage=leverage, expiracy=expiracy, amount=amount, price=price)
+        order = Order(symbol=gv.ticker_symbol[ticker], side=side, type=order_type, leverage=leverage, expiracy=expiracy, amount=amount, price=price)
         order.showData()
 
-        click.confirm('Please confirm', abort=True) #die here if No is selected (default) otherwise continue code below
-
-        return order.execute()
+        if click.confirm('Please confirm'): #abort (but don't die) here if No is selected (default) otherwise continue code below
+            return order.execute()
 
     return partial
 
@@ -202,11 +201,11 @@ def short(ctx, order_type, leverage, expiracy, amount_price):
     """
     Shorting a pair
     """
-    side = "short"
+    side = "sell" #ccxt value
     print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side))
     
-    #TEMP DEBUG
-    ctx.invoke(list, what='orders')
+    ##TEMP DEBUG
+    #ctx.invoke(list, what='orders')
 
 
 @pair.command()
@@ -216,11 +215,11 @@ def long(ctx, order_type, leverage, expiracy, amount_price):
     """
     Longing a pair
     """
-    side = "long"
+    side = "buy" #ccxt value
     print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side))
 
-    #TEMP DEBUG
-    ctx.invoke(list, what='orders')
+    ##TEMP DEBUG
+    #ctx.invoke(list, what='orders')
 
 
 @pair.command()
