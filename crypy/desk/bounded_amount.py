@@ -18,16 +18,16 @@ class PydanticConfig:
     # arbitrary_types_allowed = True
 
 
-class BoundedPriceError(CrypyException):
+class BoundedAmountError(CrypyException):
     pass
 
 
 @dataclass(frozen=True, config=PydanticConfig)
-class BoundedPrice:
+class BoundedAmount:
     """
-    Class representing a price, bounded in an interval
-    >>> BoundedPrice(value=34.56, bounds=[33.5, 35.7])
-    BoundedPrice(value=mpf('34.560000000000002'), bounds=mpi('33.5', '35.700000000000003'))
+    Class representing an amount, bounded in an interval
+    >>> BoundedAmount(value=34.56, bounds=[33.5, 35.7])
+    BoundedAmount(value=mpf('34.560000000000002'), bounds=mpi('33.5', '35.700000000000003'))
     """
 
     @staticmethod
@@ -37,7 +37,7 @@ class BoundedPrice:
         hypothesis.assume(b.a != -float("inf"))
         hypothesis.assume(b.b != float("inf"))
         v = draw(MPFloat.strategy(min_value=float(b.a), max_value=float(b.b)))
-        return BoundedPrice(value=v, bounds=b)
+        return BoundedAmount(value=v, bounds=b)
 
     value: MPFloat
     # delegating implementation to mpmath
@@ -53,7 +53,7 @@ class BoundedPrice:
         :return:
         """
         if not self.value in self.bounds:
-            raise BoundedPriceError("Price value not inside bounds")
+            raise BoundedAmountError("Price value not inside bounds")
 
         # TMP just in case mpmath lets us down
         assert self.value >= self.bounds.a
@@ -65,4 +65,3 @@ class BoundedPrice:
 if __name__ == "__main__":
     import pytest
     pytest.main(['-s', '--doctest-modules', '--doctest-continue-on-failure', __file__])
-
