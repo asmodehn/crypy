@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-defEXCHANGE = "kraken"
-defPAIR = "ETHUSD"
+defEXCHANGE = "testnet.bitmex"
+defPAIR = "BTCUSD"
 exchange_data = {
     "kraken": { 'confSection': "kraken.com", 'ccxtName': "kraken"},
     "bitmex": { 'confSection': "bitmex.com", 'ccxtName': "bitmex"},
