@@ -1,21 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import globals as globals
-from utils import Utils
+try:
+    import global_vars as gv
+except (ImportError, ValueError, ModuleNotFoundError):
+    import crypy.desk.global_vars as gv
+
+from .utils import Utils
 
 try:
     from ..euc import ccxt
     from .. import config
-except (ImportError, ValueError):
+except (ImportError, ValueError, ModuleNotFoundError):
     from crypy.euc import ccxt
     from crypy import config
 
 class Desk(object):
-    def __init__(self, conf: config.Config = None, exchange=globals.defEXCHANGE):
+    def __init__(self, conf: config.Config = None, exchange=gv.defEXCHANGE):
         self.config = conf if conf is not None else config.Config()
-        self.exchangeName = (exchange or globals.defEXCHANGE)
-        exgData = globals.exchange_data[self.exchangeName] #TODO check existance
+        self.exchangeName = (exchange or gv.defEXCHANGE)
+        exgData = gv.exchange_data[self.exchangeName] #TODO check existance
         self.exchange = getattr(ccxt, exgData['ccxtName'])(self.config.sections[exgData['confSection']].asdict()) #TODO check exchange id existing in CCXT
         if 'test' in exgData and exgData['test']:
             self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
@@ -23,7 +27,7 @@ class Desk(object):
         self.exchange.loadMarkets(True) #preload market data. NB: forced reloading w reload=True param, do we want to always do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
     def do_getExchangeInfo(self):
-        filename = 'exg_' + globals.exchange_data[self.exchangeName]['confSection'] + '.txt'
+        filename = 'exg_' + gv.exchange_data[self.exchangeName]['confSection'] + '.txt'
         file = open( filename, 'w')
         print ("### HAS ###", file = file)
         print (str(self.exchange.has).replace(', ', ', \r\n'), file = file)
@@ -43,8 +47,8 @@ class Desk(object):
             'positions': 'positions',
             'trades': 'trades'
         }.get(arg, "data")
-        for pair in globals.wholeData:
-            print(f"{pair} {what}: {str(globals.wholeData[pair][what])}")
+        for pair in gv.wholeData:
+            print(f"{pair} {what}: {str(gv.wholeData[pair][what])}")
     
     def _ccxtFetchXXX(self, ccxtMethod, **kwargs):
         """ccxt fetchXXX wrapper"""

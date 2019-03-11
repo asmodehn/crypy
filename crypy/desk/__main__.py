@@ -14,10 +14,9 @@ import prompt_toolkit
 
 import datetime
 
-
-import globals as globals
-from desk import Desk
-from order import Order
+import crypy.desk.global_vars as gv
+from crypy.desk.desk import Desk
+from crypy.desk.order import Order
 
 """Entrypoint for the desk subpackage
 Manages one (currently) exchange, via CLI
@@ -27,7 +26,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--h', '--help'])
 
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
-@click.option('-e', '--exchange', default=globals.defEXCHANGE, type=click.Choice(dict(globals.exchange_data).keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
+@click.option('-e', '--exchange', default=gv.defEXCHANGE, type=click.Choice(dict(gv.exchange_data).keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
     # starting repl if no command passed
@@ -156,7 +155,7 @@ def transfer(ctx, from_address, to_address, amount):
 
 ### CLI PAIR Sub Commands
 @cli.group()
-@click.option('-t', '--ticker', default=globals.defPAIR, type=str, show_default=True)  #TODO define valid pair tickers per exchange
+@click.option('-t', '--ticker', default=gv.defPAIR, type=str, show_default=True)  #TODO define valid pair tickers per exchange
 @click.pass_context
 def pair(ctx, ticker):
     """
@@ -186,7 +185,7 @@ def make_order(ticker, order_type, leverage, expiracy, amount, price):
 
         click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?')
 
-        order = Order(ticker=ticker, side=side, order_type=order_type, leverage=leverage, expiracy=expiracy, amount=amount, price=price)
+        order = Order(symbol=gv.ticker_symbol(ticker), side=side, order_type=order_type, leverage=leverage, expiracy=expiracy, amount=amount, price=price)
         order.showData()
 
         click.confirm('Please confirm', abort=True) #die here if No is selected (default) otherwise continue code below
@@ -240,7 +239,7 @@ def orderbook(ctx, limit):
     """
     Pair L2 orderbook
     """
-    print( Order.fetchL2OrderBook(symbol = globals.ticker_symbol[ctx.obj.ticker], limit = limit) )
+    print( Order.fetchL2OrderBook(symbol = gv.ticker_symbol[ctx.obj.ticker], limit = limit) )
 
 @pair.command()
 @click.option('-s', '--since', type=datetime, show_default=True)
@@ -261,8 +260,8 @@ def ohlcv(ctx, timeframe, since, limit):
     """
     Pair ohlcv data for interval in minutes
     """
-    #print(globals.ticker_symbol[ctx.obj.ticker])
-    print( ctx.obj.do_fetchOHLCV(symbol = globals.ticker_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    #print(gv.ticker_symbol[ctx.obj.ticker])
+    print( ctx.obj.do_fetchOHLCV(symbol = gv.ticker_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
     
 
 if __name__ == '__main__':
