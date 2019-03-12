@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import pydantic
 import typing
 import hypothesis
 import hypothesis.strategies
@@ -144,3 +145,97 @@ class MPInterval(mpmath.iv.mpf):
                 raise MPIntervalException(f"Cannot validate {b}")
         except Exception as exc:
             raise MPIntervalException(original=exc)
+
+
+
+class MPBoundedFloatException(CrypyException):
+    pass
+
+
+@pydantic.dataclasses.dataclass(frozen=True)
+class MPBoundedFloat:
+    """
+    Class representing an amount, bounded in an interval
+    >>> MPBoundedFloat(value=34.56, bounds=[33.5, 35.7])
+    BoundedAmount(value=mpf('34.560000000000002'), bounds=mpi('33.5', '35.700000000000003'))
+    """
+
+    @staticmethod
+    @hypothesis.strategies.composite
+    def strategy(draw):
+        b = draw(MPInterval.strategy())
+        hypothesis.assume(b.a != -float("inf"))
+        hypothesis.assume(b.b != float("inf"))
+        v = draw(MPFloat.strategy(min_value=float(b.a), max_value=float(b.b)))
+        return MPBoundedFloat(value=v, bounds=b)
+
+    value: MPFloat
+    # delegating implementation to mpmath
+    bounds: MPInterval
+
+    def __post_init__(self):
+        # checking bounds right after init, to except early.
+        self()
+
+    def __call__(self) -> MPFloat:
+        """
+        Calling this instance verify the bounds and return the actual value
+        :return:
+        """
+        if not self.value in self.bounds:
+            raise MPBoundedFloatException("Price value not inside bounds")
+
+        # TMP just in case mpmath lets us down
+        assert self.value >= self.bounds.a
+        assert self.value <= self.bounds.b
+
+        return self.value
+
+
+class MPBoundedFuzzyFloatException(CrypyException):
+    pass
+
+
+@pydantic.dataclasses.dataclass(frozen=True)
+class MPBoundedFuzzyFloat:
+    """
+    Class representing an amount, bounded in an interval
+    >>> MPBoundedFuzzyFloat(value=34.56, bounds=[33.5, 35.7])
+    MPBoundedFuzzyFloat(value=mpf('34.560000000000002'), bounds=mpi('33.5', '35.700000000000003'))
+    """
+
+    @staticmethod
+    @hypothesis.strategies.composite
+    def strategy(draw):
+        b = draw(MPInterval.strategy())
+        hypothesis.assume(b.a != -float("inf"))
+        hypothesis.assume(b.b != float("inf"))
+        v = draw(MPFloat.strategy(min_value=float(b.a), max_value=float(b.b)))
+        return MPBoundedFloat(value=v, bounds=b)
+
+    value: MPFuzzyFloat
+    # delegating implementation to mpmath
+    bounds: MPInterval
+
+    def __post_init__(self):
+        # checking bounds right after init, to except early.
+        self()
+
+    def __call__(self) -> MPFloat:
+        """
+        Calling this instance verify the bounds and return the actual value
+        :return:
+        """
+        if not self.value in self.bounds:
+            raise MPBoundedFuzzyFloatException("Float value not inside bounds")
+
+        # TMP just in case mpmath lets us down
+        assert self.value >= self.bounds.a
+        assert self.value <= self.bounds.b
+
+        return self.value
+
+
+# extra utils
+isfinite = mpmath.isfinite
+isinf = mpmath.isinf
