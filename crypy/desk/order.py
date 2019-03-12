@@ -73,22 +73,21 @@ class Order():
         if not 'cancelOrder' in exg.has or not exg.has['cancelOrder']:
             return f'cancelOrder() not available for this exchange'
 
-        try:
-            for order_id in order_ids:
-                try:
-                    exg.cancelOrder(order_id)
-                    print(f'order(s) {order_id} canceled')
-                except ccxt.NetworkError as err:
-                    #TODO retry cancelation
-                    pass
-                except ccxt.ValidationError as err:
-                    print(f'order(s) {order_id} invalid: bad length, cancel failed')
-                except ccxt.OrderNotFound as err:
-                    print(f'order(s) {order_id} not found: already canceled/closed or invalid order id, cancel failed')
-                except ccxt.BaseError as error:
-                    print(f'order(s) {order_id} not found invalid order id or something else, cancel failed')
-                    print(error.args[0])
-        #TODO remove from log also
+        for order_id in order_ids:
+            try:
+                exg.cancelOrder(order_id)
+                print(f'order(s) {order_id} canceled')
+                #TODO remove from log also
+            except ccxt.NetworkError as err:
+                #TODO retry cancelation
+                pass
+            except ccxt.ValidationError as err:
+                print(f'order(s) {order_id} invalid: bad length, cancel failed')
+            except ccxt.OrderNotFound as err:
+                print(f'order(s) {order_id} not found: already canceled/closed or invalid order id, cancel failed')
+            except ccxt.BaseError as error:
+                print(f'order(s) {order_id} not found invalid order id or something else, cancel failed')
+                print(error.args[0])
 
     @staticmethod
     def fetchL2OrderBook(symbol, limit):
