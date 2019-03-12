@@ -1,10 +1,12 @@
+import sys
+
 import typing
 
 import pytest
 from hypothesis import given, settings, Verbosity, infer, assume, HealthCheck
 from hypothesis.strategies import integers, floats, builds, lists, composite, one_of
 
-from mpmath import isinf
+from mpmath import isfinite
 from .. import bounded_price
 
 # TODO : adjust for https://github.com/HypothesisWorks/hypothesis/issues/1859
@@ -13,18 +15,24 @@ from .. import bounded_price
 @composite
 def underbounds(draw,):
     b = draw(bounded_price.MPInterval.strategy())
-    # TMP if infinite, need to allow infinite in strategy.
-    assume(not isinf(b.a))
-    v = draw(bounded_price.MPFloat.strategy(max_value=float(b.a), exclude_max=True, allow_infinity=False))
+    assume(isfinite(b.a) and sys.float_info.min < float(b.a) < sys.float_info.max)
+    v = draw(
+        bounded_price.MPFloat.strategy(
+            max_value=float(b.a), exclude_max=True, allow_infinity=False
+        )
+    )
     return v, b
 
 
 @composite
 def overbounds(draw,):
     b = draw(bounded_price.MPInterval.strategy())
-    # TMP if infinite, need to allow infinite in strategy.
-    assume(not isinf(b.b))
-    v = draw(bounded_price.MPFloat.strategy(min_value=float(b.b), exclude_min=True, allow_infinity=False))
+    assume(isfinite(b.b) and sys.float_info.max > float(b.b) > sys.float_info.min)
+    v = draw(
+        bounded_price.MPFloat.strategy(
+            min_value=float(b.b), exclude_min=True, allow_infinity=False
+        )
+    )
     return v, b
 
 

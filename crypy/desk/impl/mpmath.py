@@ -114,7 +114,7 @@ class MPIntervalException(CrypyException):
 
 class MPInterval(mpmath.iv.mpf):
     """
-    An interval on the float line.
+    An interval on the float line. No infinite bounds.
     """
 
     @staticmethod
@@ -131,10 +131,16 @@ class MPInterval(mpmath.iv.mpf):
         yield cls.validate
 
     @classmethod
-    def validate(cls, b: mpmath.iv.mpf):
+    def validate(cls, b: typing.Union[typing.List[float], mpmath.iv.mpf]):
         """enforce needing a pair to define an interval"""
         try:
-            # assert b.a <= b.b  # TODO : can interval be inverted (inverting the meaning of being "in" to "out") ??
-            return mpmath.mpi(b.a, b.b)
+            if isinstance(b, list):
+                # assert b[0] <= b[1]  # TODO : can interval be inverted (inverting the meaning of being "in" to "out") ??
+                return mpmath.mpi(b[0], b[1])
+            elif isinstance(b, mpmath.iv.mpf):
+                # assert b.a <= b.b  # TODO : can interval be inverted (inverting the meaning of being "in" to "out") ??
+                return b
+            else:
+                raise MPIntervalException(f"Cannot validate {b}")
         except Exception as exc:
             raise MPIntervalException(original=exc)
