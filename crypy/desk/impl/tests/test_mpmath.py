@@ -2,15 +2,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import sys
+
 import pytest
 import typing
-from hypothesis import given, Verbosity, settings
-import hypothesis.strategies
+from hypothesis import given, settings, Verbosity, assume, HealthCheck
+from hypothesis.strategies import composite, floats
 
-from ..mpmath import MPFloat, MPFuzzyFloat, MPInterval
+from ..mpmath import MPFloat, MPFuzzyFloat, MPInterval, MPBoundedFloat, MPBoundedFloatException,  MPBoundedFuzzyFloat, MPBoundedFuzzyFloatException, isfinite
 
 """
-To Verify MPMath Semantics and wrap it in types that makes sense for us
+To Verify MPMath Semantics and wrap it in type(class-e)s that makes sense for us
 """
 
 
@@ -65,7 +67,7 @@ def test_mpinterval_identity_equality(mpij):
 
 @given(
     mpf=MPFloat.strategy(),
-    val=hypothesis.strategies.floats(allow_nan=False, allow_infinity=False),
+    val=floats(allow_nan=False, allow_infinity=False),
 )
 @settings(verbosity=Verbosity.verbose)
 def test_mpfloat_add_sub(mpf, val):
@@ -88,7 +90,7 @@ def test_mpfloat_add_sub(mpf, val):
 
 @given(
     mpf=MPFuzzyFloat.strategy(),
-    val=hypothesis.strategies.floats(allow_nan=False, allow_infinity=False),
+    val=floats(allow_nan=False, allow_infinity=False),
 )
 @settings(verbosity=Verbosity.verbose)
 def test_mpfuzzyfloat_add_sub(mpf, val):
@@ -122,6 +124,95 @@ def test_mpinterval_add_sub(mpia, mpib):
     subbedb = added - mpib
 
     assert mpia in subbedb
+
+
+###############################
+
+@given(bp=MPBoundedFloat.strategy())
+@settings(verbosity=Verbosity.verbose)
+def test_init(bp):
+    # it should be a good init bounded value
+    assert bp() == bp.value
+
+
+# Testing equality properties
+@given(bp=MPBoundedFloat.strategy())
+@settings(verbosity=Verbosity.verbose)
+def test_eq_reflx(bp):
+    assert bp == bp
+
+
+@given(
+    bp1=MPBoundedFloat.strategy(),
+    bp2=MPBoundedFloat.strategy(),
+)
+@settings(verbosity=Verbosity.verbose)
+def test_eq_symm(bp1, bp2):
+    if bp1 == bp2:
+        assert bp2 == bp1
+
+
+@given(
+    bp1=MPBoundedFloat.strategy(),
+    bp2=MPBoundedFloat.strategy(),
+    bp3=MPBoundedFloat.strategy(),
+)
+@settings(verbosity=Verbosity.verbose)
+def test_eq_trans(bp1, bp2, bp3):
+    if bp1 == bp2 and bp2 == bp3:
+        assert bp1 == bp3
+
+
+@given(bp=MPBoundedFloat.strategy())
+@settings(verbosity=Verbosity.verbose)
+def test_in_call(bp):
+    assert bp() in bp.bounds
+
+
+# TODO : adjust for https://github.com/HypothesisWorks/hypothesis/issues/1859
+
+
+@composite
+def underbounds(draw,):
+    b = draw(MPInterval.strategy())
+    assume(isfinite(b.a) and sys.float_info.min < float(b.a) < sys.float_info.max)
+    v = draw(
+        MPFloat.strategy(
+            max_value=float(b.a), exclude_max=True, allow_infinity=False
+        )
+    )
+    return v, b
+
+
+@composite
+def overbounds(draw,):
+    b = draw(MPInterval.strategy())
+    assume(isfinite(b.b) and sys.float_info.max > float(b.b) > sys.float_info.min)
+    v = draw(
+        MPFloat.strategy(
+            min_value=float(b.b), exclude_min=True, allow_infinity=False
+        )
+    )
+    return v, b
+
+
+@given(vb=overbounds())
+@settings(verbosity=Verbosity.verbose, suppress_health_check=[HealthCheck.too_slow])
+def test_overbounds(vb):
+    v, b = vb
+    with pytest.raises(MPBoundedFloatException):
+        bp = MPBoundedFloat(value=v, bounds=b)
+
+
+@given(vb=underbounds())
+@settings(verbosity=Verbosity.verbose, suppress_health_check=[HealthCheck.too_slow])
+def test_underbounds(vb):
+    v, b = vb
+    with pytest.raises(MPBoundedFloatException):
+        bp = MPBoundedFloat(value=v, bounds=b)
+
+
+# TODO : test basic arithmetic with variable precision...
 
 
 if __name__ == "__main__":
