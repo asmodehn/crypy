@@ -64,17 +64,10 @@ def exchange_info(ctx):
     print(ctx.do_getExchangeInfo())
 
 @cli.command()
-@click.argument('what', default='data')
+@click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
 @click.pass_obj
 def list(ctx, what):
-    """display all followed pairs informations
-
-    @param:
-        data {default}: for data
-        orders: for orders
-        positions: for positions
-        trades: for past trades
-    """
+    """display all followed pairs informations"""
     ctx.do_list(what)
 
 @cli.command()
