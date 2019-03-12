@@ -227,9 +227,9 @@ def long(ctx, order_type, leverage, expiracy, amount_price):
 @click.pass_context
 def cancel_order(ctx, ids):
     """
-    Pair cancel order(s) TODO
+    Pair cancel order(s)
     """
-    order = Order.cancel(order_ids=ids)
+    Order.cancel(order_ids=ids)
 
 @pair.command()
 @click.option('-l', '--limit', type=int, default=7, show_default=True)

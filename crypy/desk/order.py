@@ -47,18 +47,48 @@ class Order():
     def execute(self):
         try:
             #TODO: MAYBE we should think about passing the exchange to the order class directly on class instanciation and use one instance ?
-            success = click.get_current_context().obj.exchange.createOrder(**dict(self.data))
-            return 'order_id: ' + success['id']
+            desk = click.get_current_context().obj
+            exg = desk.exchange
+            if not 'createOrder' in exg.has or not exg.has['createOrder']:
+                return f'createOrder() not available for this exchange'
+
+            #TODO MEX: nb of contracts to buy == order value * order price
+            response = exg.createOrder(**dict(self.data))
+
+            filename = 'exg_' + desk.exchangeName + '_orders.txt'
+            file = open( filename, 'a')
+            print (response, file = file)
+            file.close()
             #TODO SAVE (how/where)
+
+            orderId = response['id']
+            return 'order_id: ' + orderId
 
         except ccxt.BaseError as error:
             return error.args[0]
 
     @staticmethod
     def cancel(order_ids):
-        #TODO
-        print(order_ids)
-        print(">> TODO <<")
+        exg = click.get_current_context().obj.exchange
+        if not 'cancelOrder' in exg.has or not exg.has['cancelOrder']:
+            return f'cancelOrder() not available for this exchange'
+
+        try:
+            for order_id in order_ids:
+                try:
+                    exg.cancelOrder(order_id)
+                    print(f'order(s) {order_id} canceled')
+                except ccxt.NetworkError as err:
+                    #TODO retry cancelation
+                    pass
+                except ccxt.ValidationError as err:
+                    print(f'order(s) {order_id} invalid: bad length, cancel failed')
+                except ccxt.OrderNotFound as err:
+                    print(f'order(s) {order_id} not found: already canceled/closed or invalid order id, cancel failed')
+                except ccxt.BaseError as error:
+                    print(f'order(s) {order_id} not found invalid order id or something else, cancel failed')
+                    print(error.args[0])
+        #TODO remove from log also
 
     @staticmethod
     def fetchL2OrderBook(symbol, limit):
