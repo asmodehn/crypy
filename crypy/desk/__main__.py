@@ -239,9 +239,9 @@ def orderbook(ctx, limit):
 @click.pass_context
 def last_trades(ctx, since, limit):
     """
-    Pair list of last trades TODO
+    Pair list of last trades 
     """
-    print(">> TODO <<")
+    print( ctx.obj.do_fetchTrades(symbol = gv.ticker_symbol[ctx.obj.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
 @pair.command()
 @click.option('-tf', '--timeframe', default='1m', type=click.Choice(['1m', '3m', '15m', '30m', '1h', '2H', '4H', '6H', '12H', '1D', '3D', '1W', '1M']), show_default=True, help="timeframe in minutes") #TODO choices must depend on exchange i suppose

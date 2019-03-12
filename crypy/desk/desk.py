@@ -105,3 +105,6 @@ class Desk(object):
 
     def do_fetchLedger(self, code, since, limit, customParams):
         return self._ccxtFetchXXX('fetchLedger', code = code, since = since, limit = limit, params = customParams)
+
+    def do_fetchTrades(self, symbol, since, limit, customParams):
+        return self._ccxtFetchXXX('fetchTrades', symbol = symbol, since = since, limit = limit, params = customParams)
