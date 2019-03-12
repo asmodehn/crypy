@@ -133,16 +133,16 @@ def ledger(ctx, assets, type, since, limit):
     print( ctx.obj.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
 
 
-@cli.command()
-@click.option('-f', '--from-address', type=str, show_default=True, help="address to withdrawal from")
-@click.option('-t', '--to-address', type=str, show_default=True, help="address to deposit to")
-@click.option('-a', '--amount', type=float, default='all', show_default=True, help="amount to transfer")
-@click.pass_context
-def transfer(ctx, from_address, to_address, amount):
-    """
-    Transfer from address to address TODO (private data)
-    """
-    print(">> TODO <<")
+#@cli.command()
+#@click.option('-f', '--from-address', type=str, show_default=True, help="address to withdrawal from")
+#@click.option('-t', '--to-address', type=str, show_default=True, help="address to deposit to")
+#@click.option('-a', '--amount', type=float, default='all', show_default=True, help="amount to transfer")
+#@click.pass_context
+#def transfer(ctx, from_address, to_address, amount):
+#    """
+#    Transfer from address to address TODO (private data)
+#    """
+#    print(">> TODO <<")
 
 
 
