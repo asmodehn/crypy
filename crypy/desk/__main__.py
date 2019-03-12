@@ -68,7 +68,7 @@ def exchange_info(ctx):
 @click.pass_obj
 def list(ctx, what):
     """display all followed pairs informations"""
-    ctx.do_list(what)
+    print( ctx.do_list(what = what, customParams = {}) )  #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -255,6 +255,12 @@ def ohlcv(ctx, timeframe, since, limit):
     #print(gv.ticker_symbol[ctx.obj.ticker])
     print( ctx.obj.do_fetchOHLCV(symbol = gv.ticker_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
     
+@pair.command()
+@click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
+@click.pass_context
+def list(ctx, what):
+    """display pairs informations"""
+    print( ctx.obj.do_list(what = what, symbol = gv.ticker_symbol[ctx.obj.ticker], customParams = {}) )  #todo customparams for exchange if needed
 
 if __name__ == '__main__':
     cli()

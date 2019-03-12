@@ -39,16 +39,17 @@ class Desk(object):
         #Exchange properties https://github.com/ccxt/ccxt/wiki/Manual#exchange-properties
         return 'Exchange data printed to ' + filename
 
-    def do_list(self, arg):
-        arg = "data" if arg is '' else arg
-        what = {
-            'data': 'data',
-            'orders': 'orders',
-            'positions': 'positions',
-            'trades': 'trades'
-        }.get(arg, "data")
-        for pair in gv.wholeData:
-            print(f"{pair} {what}: {str(gv.wholeData[pair][what])}")
+    def do_list(self, what, customParams, symbol=None):
+        #for pair in gv.wholeData:
+        #    print(f"{pair} {what}: {str(gv.wholeData[pair][what])}")
+        name2cmd = {
+            'data': 'fetchData', #TODO: doesn't exists so make it
+            'orders': 'fetchOpenOrders', #working
+            'positions': 'fetchPositions', #TODO: doesn't exists so make it
+            'trades': 'fetchMyTrades' #TODO: not available on mex but available on kraken
+            }
+        ret = self._ccxtFetchXXX(ccxtMethod = name2cmd[what], symbol = symbol, params = customParams)
+        return (ret if (len(ret) > 0) else 'no '+ what)
     
     def _ccxtFetchXXX(self, ccxtMethod, **kwargs):
         """ccxt fetchXXX wrapper"""
