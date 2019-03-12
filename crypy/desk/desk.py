@@ -24,7 +24,7 @@ class Desk(object):
         if 'test' in exgData and exgData['test']:
             self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
         
-        self.exchange.loadMarkets(True) #preload market data. NB: forced reloading w reload=True param, do we want to always do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
+        self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
     def do_getExchangeInfo(self):
         filename = 'exg_' + gv.exchange_data[self.exchangeName]['confSection'] + '.txt'
@@ -54,7 +54,7 @@ class Desk(object):
         """ccxt fetchXXX wrapper"""
         exg = self.exchange
         if not ccxtMethod in exg.has or not exg.has[ccxtMethod]:
-            return f'{ccxtMethod} not available for this exchange'
+            return f'{ccxtMethod}() not available for this exchange'
 
         try:
             #Do we need to (re)load market everytime to get accurate data?
