@@ -13,15 +13,15 @@ class Order():
     Order class WIP
     abstract
     """
-    struct = {
-        'symbol' : 'TBD',
-        'side': 'buy|sell',
-        'type': 'limit(default)|market [future: |stop limit|stop market|take profit|traling stop]', #TODO other useful types need to overide exchange params https://github.com/ccxt/ccxt/wiki/Manual#overriding-unified-api-params
-        'amount': 'TBD',
-        'price': 'TBD',
-        'leverage': '1->5(default)',
-        'expiracy': 'none(default)|TBD'
-    }
+    #struct = {
+    #    'symbol' : 'TBD',
+    #    'side': 'buy|sell',
+    #    'type': 'limit(default)|market [future: |stop limit|stop market|take profit|traling stop]', #TODO other useful types need to overide exchange params https://github.com/ccxt/ccxt/wiki/Manual#overriding-unified-api-params
+    #    'amount': 'TBD',
+    #    'price': 'TBD',
+    #    'leverage': '1->5(default)',
+    #    'expiracy': 'none(default)|TBD'
+    #}
 
     def __init__(self, side, symbol, type, leverage, expiracy, amount, price):
         #TODO(future): Note, that some exchanges will not accept market orders (they allow limit orders only).
@@ -32,7 +32,8 @@ class Order():
             'type' : type,
             'side' : side,
             'amount' : amount,
-            'price' : price
+            'price' : price,
+            'leverage': leverage
         }
         ## TODO overrides for other orders
         #params = {
@@ -49,15 +50,26 @@ class Order():
             #TODO: MAYBE we should think about passing the exchange to the order class directly on class instanciation and use one instance ?
             desk = click.get_current_context().obj
             exg = desk.exchange
+            leverage = self.data['leverage']
+            del self.data['leverage'] #remove the leverage from the order arg list coz createOrder() doesnt handle it
+            #amount = self.data['amount']
+            #TODO MEX: nb of contracts to buy == order value * order price
+
+            if leverage > 1 and (not hasattr(exg, 'privatePostPositionLeverage')): #working on bitmex, check other exchanges
+                return f'privatePostPositionLeverage() not available for this exchange'
+
             if not 'createOrder' in exg.has or not exg.has['createOrder']:
                 return f'createOrder() not available for this exchange'
-
-            #TODO MEX: nb of contracts to buy == order value * order price
+            
+            #first set the leverage (NB: it changes leverage of existing orders too!)
+            response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
+            #second post order
             response = exg.createOrder(**dict(self.data))
 
             filename = 'exg_' + desk.exchangeName + '_orders.txt'
             file = open( filename, 'a')
             print (response, file = file)
+            print (response2, file = file)
             file.close()
             #TODO SAVE (how/where)
 

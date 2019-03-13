@@ -161,7 +161,8 @@ def pair(ctx, ticker):
 def order_options(ctx):
     click.option('-ot', '--order-type', default='limit',
                   type=click.Choice(['limit', 'market']), show_default=True)(ctx)
-    click.option('-lv', '--leverage', type=click.IntRange(1, 5), default=1, show_default=True)(ctx)
+    #click.option('-lv', '--leverage', type=click.IntRange(1, 5), default=1, show_default=True)(ctx) #kraken
+    click.option('-lv', '--leverage', type=click.IntRange(0, 100), default=5, show_default=True)(ctx) #bitmex leverage value: a number between 0.01 and 100. Send 0 to enable cross margin.
     click.option('-exp', '--expiracy', type=str, default='none',
                  show_default=True)(ctx)  # TODO use it #TODO handle datetime format
                                           # #(https://click.palletsprojects.com/en/7.x/options/#callbacks-for-validation)
@@ -176,13 +177,15 @@ def make_order(ticker, order_type, leverage, expiracy, amount, price):
     def partial(side):
         nonlocal ticker, order_type, leverage, expiracy, amount, price
 
-        click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?')
+        click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
 
         order = Order(symbol=gv.ticker_symbol[ticker], side=side, type=order_type, leverage=leverage, expiracy=expiracy, amount=amount, price=price)
         order.showData()
 
-        if click.confirm('Please confirm'): #abort (but don't die) here if No is selected (default) otherwise continue code below
+        if click.confirm('Please confirm (NB: if there are existing orders for the pair, it might change their leverage also)'): #abort (but don't die) here if No is selected (default) otherwise continue code below
             return order.execute()
+        else:
+            return "order execution aborted"
 
     return partial
 
