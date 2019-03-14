@@ -160,29 +160,34 @@ def pair(ctx, ticker):
 
 def order_options(ctx):
     click.option('-ot', '--order-type', default='limit',
-                  type=click.Choice(['limit', 'market']), show_default=True)(ctx)
+                  type=click.Choice(['limit', 'market']), show_default=True)(ctx) #TODO others order types
     #click.option('-lv', '--leverage', type=click.IntRange(1, 5), default=1, show_default=True)(ctx) #kraken
     click.option('-lv', '--leverage', type=click.IntRange(0, 100), default=5, show_default=True)(ctx) #bitmex leverage value: a number between 0.01 and 100. Send 0 to enable cross margin.
     click.option('-exp', '--expiracy', type=str, default='none',
                  show_default=True)(ctx)  # TODO use it #TODO handle datetime format
                                           # #(https://click.palletsprojects.com/en/7.x/options/#callbacks-for-validation)
+    
+    click.option('-id', '--id', type=str, default=None, help="id of order to update")(ctx)
     click.argument('amount_price', nargs=2, type=float)(ctx)
 
     return ctx
 
 
 # OR use functools.partial
-def make_order(ticker, order_type, leverage, expiracy, amount, price):
+def make_order(ticker, order_type, leverage, expiracy, id, amount, price):
 
     def partial(side):
-        nonlocal ticker, order_type, leverage, expiracy, amount, price
+        nonlocal ticker, order_type, leverage, expiracy, id, amount, price
 
-        click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
+        if id is None:
+            click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
+        else :
+            click.echo(f'Do you want to change order {id} with the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
 
-        order = Order(symbol=gv.ticker_symbol[ticker], side=side, type=order_type, leverage=leverage, expiracy=expiracy, amount=amount, price=price)
+        order = Order(symbol=gv.ticker_symbol[ticker], side=side, type=order_type, leverage=leverage, expiracy=expiracy, id= id, amount=amount, price=price)
         order.showData()
 
-        if click.confirm('Please confirm (NB: if there are existing orders for the pair, it might change their leverage also)'): #abort (but don't die) here if No is selected (default) otherwise continue code below
+        if click.confirm('Please confirm' + ( ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if leverage > 1 else '')): #abort (but don't die) here if No is selected (default) otherwise continue code below
             return order.execute()
         else:
             return "order execution aborted"
@@ -193,12 +198,12 @@ def make_order(ticker, order_type, leverage, expiracy, amount, price):
 @pair.command()
 @order_options
 @click.pass_context
-def short(ctx, order_type, leverage, expiracy, amount_price):
+def short(ctx, order_type, leverage, expiracy, id, amount_price):
     """
     Shorting a pair
     """
     side = "sell" #ccxt value
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side))
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, id = id, amount=amount_price[0], price=amount_price[1])(side=side))
     
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
@@ -207,12 +212,12 @@ def short(ctx, order_type, leverage, expiracy, amount_price):
 @pair.command()
 @order_options
 @click.pass_context
-def long(ctx, order_type, leverage, expiracy, amount_price):
+def long(ctx, order_type, leverage, expiracy, id, amount_price):
     """
     Longing a pair
     """
     side = "buy" #ccxt value
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, amount=amount_price[0], price=amount_price[1])(side=side))
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, id = id, amount=amount_price[0], price=amount_price[1])(side=side))
 
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')

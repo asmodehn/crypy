@@ -47,7 +47,7 @@ class Desk(object):
             'orders': 'fetchOpenOrders', #working
             'positions': 'fetchPositions', #TODO: doesn't exists so make it
             'trades': 'fetchMyTrades' #TODO: not available on mex but available on kraken
-            }
+        }
         ret = self._ccxtFetchXXX(ccxtMethod = name2cmd[what], symbol = symbol, params = customParams)
         return (ret if (len(ret) > 0) else 'no '+ what)
     

@@ -23,7 +23,7 @@ class Order():
     #    'expiracy': 'none(default)|TBD'
     #}
 
-    def __init__(self, side, symbol, type, leverage, expiracy, amount, price):
+    def __init__(self, side, symbol, type, leverage, expiracy, id, amount, price):
         #TODO(future): Note, that some exchanges will not accept market orders (they allow limit orders only).
         #if exchange.has['createMarketOrder']:
 
@@ -33,7 +33,8 @@ class Order():
             'side' : side,
             'amount' : amount,
             'price' : price,
-            'leverage': leverage
+            'leverage': leverage,
+            'id': id
         }
         ## TODO overrides for other orders
         #params = {
@@ -58,13 +59,25 @@ class Order():
             if leverage > 1 and (not hasattr(exg, 'privatePostPositionLeverage')): #working on bitmex, check other exchanges
                 return f'privatePostPositionLeverage() not available for this exchange'
 
-            if not 'createOrder' in exg.has or not exg.has['createOrder']:
-                return f'createOrder() not available for this exchange'
+            id = self.data['id']
+            if id is None:
+                if not 'createOrder' in exg.has or not exg.has['createOrder']:
+                    return f'createOrder() not available for this exchange'
+                del self.data['id'] #remove the id from the order arg list coz createOrder() doesnt handle it
+            else:
+                if not 'editOrder' in exg.has or not exg.has['editOrder']:
+                    return f'editOrder() not available for this exchange'
+
+                #TODO check side of new and old orders (aka when an id is present) are the same, otherwise ccxt error (mex: immediate liquidation error)
             
             #first set the leverage (NB: it changes leverage of existing orders too!)
             response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
-            #second post order
-            response = exg.createOrder(**dict(self.data))
+
+            #second post/update order
+            if id is None:
+                response = exg.createOrder(**dict(self.data))
+            else:
+                response = exg.editOrder(**dict(self.data))
 
             filename = 'exg_' + desk.exchangeName + '_orders.txt'
             file = open( filename, 'a')
