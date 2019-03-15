@@ -52,9 +52,8 @@ class Order():
             desk = click.get_current_context().obj
             exg = desk.exchange
             leverage = self.data['leverage']
-            del self.data['leverage'] #remove the leverage from the order arg list coz createOrder() doesnt handle it
-            #amount = self.data['amount']
-            #TODO MEX: nb of contracts to buy == order value * order price
+            del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
+            self.data['amount'] = int(self.data['amount'] * self.data['price']) #Mex Specifik: nb of contracts to order (int) == order amount * order price
 
             if leverage > 1 and (not hasattr(exg, 'privatePostPositionLeverage')): #working on bitmex, check other exchanges
                 return f'privatePostPositionLeverage() not available for this exchange'
@@ -63,7 +62,7 @@ class Order():
             if id is None:
                 if not 'createOrder' in exg.has or not exg.has['createOrder']:
                     return f'createOrder() not available for this exchange'
-                del self.data['id'] #remove the id from the order arg list coz createOrder() doesnt handle it
+                del self.data['id'] #remove the id from the order data coz createOrder() doesnt handle it
             else:
                 if not 'editOrder' in exg.has or not exg.has['editOrder']:
                     return f'editOrder() not available for this exchange'
@@ -78,13 +77,13 @@ class Order():
                 response = exg.createOrder(**dict(self.data))
             else:
                 response = exg.editOrder(**dict(self.data))
-
+                
+            #TODO SAVE (how/where)
             filename = 'exg_' + desk.exchangeName + '_orders.txt'
             file = open( filename, 'a')
             print (response, file = file)
             print (response2, file = file)
             file.close()
-            #TODO SAVE (how/where)
 
             orderId = response['id']
             return 'order_id: ' + orderId
