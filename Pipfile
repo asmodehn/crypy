@@ -27,6 +27,7 @@ black = "*"
 pydantic = "*"
 hypothesis = "*"
 mpmath = "*"
+structlog = "*"
 
 [dev-packages]
 
