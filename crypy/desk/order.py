@@ -3,6 +3,16 @@
 
 import click
 
+import structlog
+filename = 'log.txt'
+file = open( filename, 'a')
+#structlog.configure( logger_factory=structlog.PrintLogger(file = file) )
+#logger = structlog.get_logger()
+
+#from structlog import PrintLogger
+logger = structlog.PrintLogger(file = file)
+
+
 try:
     from ..euc import ccxt
 except (ImportError, ValueError, ModuleNotFoundError):
@@ -71,6 +81,7 @@ class Order():
             
             #first set the leverage (NB: it changes leverage of existing orders too!)
             response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
+            logger.msg(str(response2))
 
             #second post/update order
             if id is None:
@@ -78,13 +89,8 @@ class Order():
             else:
                 response = exg.editOrder(**dict(self.data))
                 
-            #TODO SAVE (how/where)
-            filename = 'exg_' + desk.exchangeName + '_orders.txt'
-            file = open( filename, 'a')
-            print (response, file = file)
-            print (response2, file = file)
-            file.close()
-
+            logger.msg(str(response))
+            
             orderId = response['id']
             return 'order_id: ' + orderId
 
