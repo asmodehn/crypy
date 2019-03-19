@@ -5,11 +5,8 @@ import click
 
 import structlog
 filename = 'log.txt'
-file = open( filename, 'a')
+file = open( filename, 'a') #TODO where do we close it
 #structlog.configure( logger_factory=structlog.PrintLogger(file = file) )
-#logger = structlog.get_logger()
-
-#from structlog import PrintLogger
 logger = structlog.PrintLogger(file = file)
 
 
@@ -68,8 +65,8 @@ class Order():
             if leverage > 1 and (not hasattr(exg, 'privatePostPositionLeverage')): #working on bitmex, check other exchanges
                 return f'privatePostPositionLeverage() not available for this exchange'
 
-            id = self.data['id']
-            if id is None:
+            orderId = self.data['id']
+            if orderId is None:
                 if not 'createOrder' in exg.has or not exg.has['createOrder']:
                     return f'createOrder() not available for this exchange'
                 del self.data['id'] #remove the id from the order data coz createOrder() doesnt handle it
@@ -89,9 +86,9 @@ class Order():
             else:
                 response = exg.editOrder(**dict(self.data))
                 
-            logger.msg(str(response))
-            
             orderId = response['id']
+            logger.msg(str(response))
+
             return 'order_id: ' + orderId
 
         except ccxt.BaseError as error:
