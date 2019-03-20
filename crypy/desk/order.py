@@ -118,5 +118,5 @@ class Order():
 
     @staticmethod
     def fetchL2OrderBook(symbol, limit):
-        orderbook = click.get_current_context().obj._ccxtFetchXXX('fetchL2OrderBook', symbol = symbol, limit = limit)
+        orderbook = click.get_current_context().obj._ccxtMethod('fetchL2OrderBook', symbol = symbol, limit = limit)
         return orderbook #TODO better format i guess

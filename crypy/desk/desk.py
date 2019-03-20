@@ -66,11 +66,11 @@ class Desk(object):
             }
         } #TODO: type cheking of keys
 
-        ret = self._ccxtFetchXXX(name2cmd[what]['cmd'], **name2cmd[what]['kwargs'])
+        ret = self._ccxtMethod(name2cmd[what]['cmd'], **name2cmd[what]['kwargs'])
         return (ret if (len(ret) > 0) else 'no '+ what)
     
-    def _ccxtFetchXXX(self, ccxtMethod, **kwargs):
-        """ccxt fetchXXX wrapper"""
+    def _ccxtMethod(self, ccxtMethod, **kwargs):
+        """ccxt Method wrapper"""
         exg = self.exchange
         if not ccxtMethod in exg.has or not exg.has[ccxtMethod]: #ccxt unified method check
             if not hasattr(exg, ccxtMethod): #ccxt implicit (not unified) method check
@@ -88,7 +88,7 @@ class Desk(object):
 
     def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
         #Get data
-        tohlcv = self._ccxtFetchXXX('fetchOHLCV', symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
+        tohlcv = self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
         #TODO handle exception in return
 
         #format data into a list
@@ -114,18 +114,18 @@ class Desk(object):
         return tohlcvlist
 
     def do_fetchBalance(self, customParams):
-        return self._ccxtFetchXXX('fetchBalance', params = customParams)
+        return self._ccxtMethod('fetchBalance', params = customParams)
     def do_fetchTotalBalance(self, customParams):
-        return self._ccxtFetchXXX('fetchTotalBalance', params = customParams)
+        return self._ccxtMethod('fetchTotalBalance', params = customParams)
     def do_fetchFreeBalance(self, customParams):
-        return self._ccxtFetchXXX('fetchFreeBalance', params = customParams)
+        return self._ccxtMethod('fetchFreeBalance', params = customParams)
     def do_fetchUsedBalance(self, customParams):
-        return self._ccxtFetchXXX('fetchUsedBalance', params = customParams)
+        return self._ccxtMethod('fetchUsedBalance', params = customParams)
     def do_fetchPartialBalance(self, customParams):
-        return self._ccxtFetchXXX('fetchPartialBalance', params = customParams)
+        return self._ccxtMethod('fetchPartialBalance', params = customParams)
 
     def do_fetchLedger(self, code, since, limit, customParams):
-        return self._ccxtFetchXXX('fetchLedger', code = code, since = since, limit = limit, params = customParams)
+        return self._ccxtMethod('fetchLedger', code = code, since = since, limit = limit, params = customParams)
 
     def do_fetchTrades(self, symbol, since, limit, customParams):
-        return self._ccxtFetchXXX('fetchTrades', symbol = symbol, since = since, limit = limit, params = customParams)
+        return self._ccxtMethod('fetchTrades', symbol = symbol, since = since, limit = limit, params = customParams)
