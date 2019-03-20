@@ -8,7 +8,7 @@ exchange_data = {
     "bitmex": { 'confSection': "bitmex.com", 'ccxtName': "bitmex"},
     "testnet.bitmex": { 'confSection': "testnet.bitmex.com", 'ccxtName': "bitmex", 'test': True }
 }
-ticker_symbol = {
+ticker2symbol = {
     'ETHUSD': 'ETH/USD',
     'XBTUSD': 'XBT/USD',
     'ETHEUR': 'ETH/EUR',
@@ -17,13 +17,13 @@ ticker_symbol = {
     'ETHBTC': 'ETH/BTC'
     #TBC
 } #todo handle multiple symbol for pair if needed #todo this is exchange specific
-symbol_id = {
+symbol2id = {
     'BTC/USD': 'XBTUSD',
     'XBT/USD': 'XBTUSD'
     #TBC
 } #todo this is exchange specific
 
-time_second = {
+tf2second = {
     '1m': 60, '3m': 180, '15m': 900, '30m': 1800, '1h': 3600, '2H': 7200, '4H': 14400, '6H': 21600, '12H': 43200, '1D': 86400, '3D': 259200, '1W': 604800, '1M': 2592000
     } #warning 1M == 30days
 

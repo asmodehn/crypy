@@ -58,7 +58,7 @@ class Desk(object):
             },
             'positions': {
                 'cmd' : 'private_get_position', #TODO: should be exchange.fetchPositions but doesn't exists on mex so make it
-                'kwargs': { 'params': ({ 'filter': json.dumps({ 'symbol': gv.symbol_id[symbol] }) } if symbol is not None else customParams) } #todo exchange specific mex
+                'kwargs': { 'params': ({ 'filter': json.dumps({ 'symbol': gv.symbol2id[symbol] }) } if symbol is not None else customParams) } #todo exchange specific mex
             },
             'trades': {
                 'cmd' : 'fetchMyTrades', #TODO: exchange.fetchMyTrades not available on mex but available on kraken

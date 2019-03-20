@@ -184,7 +184,7 @@ def make_order(ticker, order_type, leverage, expiracy, id, amount, price):
         else :
             click.echo(f'Do you want to change order {id} with the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
 
-        order = Order(symbol=gv.ticker_symbol[ticker], side=side, type=order_type, leverage=leverage, expiracy=expiracy, id= id, amount=amount, price=price)
+        order = Order(symbol=gv.ticker2symbol[ticker], side=side, type=order_type, leverage=leverage, expiracy=expiracy, id= id, amount=amount, price=price)
         order.showData()
 
         if click.confirm('Please confirm' + ( ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if leverage > 1 else '')): #abort (but don't die) here if No is selected (default) otherwise continue code below
@@ -239,7 +239,7 @@ def orderbook(ctx, limit):
     """
     Pair L2 orderbook
     """
-    print( Order.fetchL2OrderBook(symbol = gv.ticker_symbol[ctx.obj.ticker], limit = limit) )
+    print( Order.fetchL2OrderBook(symbol = gv.ticker2symbol[ctx.obj.ticker], limit = limit) )
 
 @pair.command()
 @click.option('-s', '--since', type=datetime, show_default=True)
@@ -249,7 +249,7 @@ def last_trades(ctx, since, limit):
     """
     Pair list of last trades 
     """
-    print( ctx.obj.do_fetchTrades(symbol = gv.ticker_symbol[ctx.obj.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    print( ctx.obj.do_fetchTrades(symbol = gv.ticker2symbol[ctx.obj.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
 @pair.command()
 @click.option('-tf', '--timeframe', default='1m', type=click.Choice(['1m', '3m', '15m', '30m', '1h', '2H', '4H', '6H', '12H', '1D', '3D', '1W', '1M']), show_default=True, help="timeframe in minutes") #TODO choices must depend on exchange i suppose
@@ -260,15 +260,15 @@ def ohlcv(ctx, timeframe, since, limit):
     """
     Pair ohlcv data for interval in minutes
     """
-    #print(gv.ticker_symbol[ctx.obj.ticker])
-    print( ctx.obj.do_fetchOHLCV(symbol = gv.ticker_symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    #print(gv.ticker2symbol[ctx.obj.ticker])
+    print( ctx.obj.do_fetchOHLCV(symbol = gv.ticker2symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
     
 @pair.command()
 @click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
 @click.pass_context
 def list(ctx, what):
     """display pairs informations"""
-    print( ctx.obj.do_list(what = what, symbol = gv.ticker_symbol[ctx.obj.ticker], customParams = {}) )  #todo customparams for exchange if needed
+    print( ctx.obj.do_list(what = what, symbol = gv.ticker2symbol[ctx.obj.ticker], customParams = {}) )  #todo customparams for exchange if needed
 
 if __name__ == '__main__':
     cli()
