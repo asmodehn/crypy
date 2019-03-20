@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import inspect #useful to debug w inspect.signature for example
+
+import json
+
 try:
     import global_vars as gv
 except (ImportError, ValueError, ModuleNotFoundError):
@@ -42,20 +46,35 @@ class Desk(object):
     def do_list(self, what, customParams, symbol=None):
         #for pair in gv.wholeData:
         #    print(f"{pair} {what}: {str(gv.wholeData[pair][what])}")
+        defaultKWargs = { 'params' : customParams }
         name2cmd = {
-            'data': 'fetchData', #TODO: doesn't exists so make it
-            'orders': 'fetchOpenOrders', #working
-            'positions': 'fetchPositions', #TODO: doesn't exists so make it
-            'trades': 'fetchMyTrades' #TODO: not available on mex but available on kraken
-        }
-        ret = self._ccxtFetchXXX(ccxtMethod = name2cmd[what], symbol = symbol, params = customParams)
+            'data': {
+                'cmd' :'fetchData', #TODO: exchange.fetchData doesn't exists so make it
+                'kwargs': { 'symbol' : symbol, 'params' : customParams }
+            },
+            'orders': {
+                'cmd' : 'fetchOpenOrders', #working
+                'kwargs': { 'symbol' : symbol, 'params' : customParams }
+            },
+            'positions': {
+                'cmd' : 'private_get_position', #TODO: should be exchange.fetchPositions but doesn't exists on mex so make it
+                'kwargs': { 'params': ({ 'filter': json.dumps({ 'symbol': gv.symbol_id[symbol] }) } if symbol is not None else customParams) } #todo exchange specific mex
+            },
+            'trades': {
+                'cmd' : 'fetchMyTrades', #TODO: exchange.fetchMyTrades not available on mex but available on kraken
+                'kwargs': { 'symbol' : symbol, 'params' : customParams }
+            }
+        } #TODO: type cheking of keys
+
+        ret = self._ccxtFetchXXX(name2cmd[what]['cmd'], **name2cmd[what]['kwargs'])
         return (ret if (len(ret) > 0) else 'no '+ what)
     
     def _ccxtFetchXXX(self, ccxtMethod, **kwargs):
         """ccxt fetchXXX wrapper"""
         exg = self.exchange
-        if not ccxtMethod in exg.has or not exg.has[ccxtMethod]:
-            return f'{ccxtMethod}() not available for this exchange'
+        if not ccxtMethod in exg.has or not exg.has[ccxtMethod]: #ccxt unified method check
+            if not hasattr(exg, ccxtMethod): #ccxt implicit (not unified) method check
+                return f'{ccxtMethod}() not available for this exchange'
 
         try:
             #Do we need to (re)load market everytime to get accurate data?
@@ -64,6 +83,8 @@ class Desk(object):
 
         except ccxt.BaseError as error:
             return error.args[0]
+        except TypeError as error:
+            return f"invalid argument(s) when calling {ccxtMethod}(). Internal error: {error.args[0]}"
 
     def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
         #Get data
