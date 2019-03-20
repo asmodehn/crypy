@@ -65,6 +65,7 @@ def exchange_info(ctx):
 
 @cli.command()
 @click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
+#TODO limit argument
 @click.pass_obj
 def list(ctx, what):
     """display all followed pairs informations"""
@@ -200,7 +201,7 @@ def make_order(ticker, order_type, leverage, expiracy, id, amount, price):
 @click.pass_context
 def short(ctx, order_type, leverage, expiracy, id, amount_price):
     """
-    Shorting a pair
+    Pair: Create/Update a SHORT order
     """
     side = "sell" #ccxt value
     print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, id = id, amount=amount_price[0], price=amount_price[1])(side=side))
@@ -214,7 +215,7 @@ def short(ctx, order_type, leverage, expiracy, id, amount_price):
 @click.pass_context
 def long(ctx, order_type, leverage, expiracy, id, amount_price):
     """
-    Longing a pair
+    Pair: Create/Update a LONG order
     """
     side = "buy" #ccxt value
     print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, id = id, amount=amount_price[0], price=amount_price[1])(side=side))
@@ -228,7 +229,7 @@ def long(ctx, order_type, leverage, expiracy, id, amount_price):
 @click.pass_context
 def cancel_order(ctx, ids):
     """
-    Pair cancel order(s)
+    Pair: cancel order(s)
     """
     Order.cancel(order_ids=ids)
 
@@ -237,7 +238,7 @@ def cancel_order(ctx, ids):
 @click.pass_context
 def orderbook(ctx, limit):
     """
-    Pair L2 orderbook
+    Pair: L2 orderbook
     """
     print( Order.fetchL2OrderBook(symbol = gv.ticker2symbol[ctx.obj.ticker], limit = limit) )
 
@@ -247,7 +248,7 @@ def orderbook(ctx, limit):
 @click.pass_context
 def last_trades(ctx, since, limit):
     """
-    Pair list of last trades 
+    Pair: list of last trades (not user related)
     """
     print( ctx.obj.do_fetchTrades(symbol = gv.ticker2symbol[ctx.obj.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
@@ -258,16 +259,17 @@ def last_trades(ctx, since, limit):
 @click.pass_context
 def ohlcv(ctx, timeframe, since, limit):
     """
-    Pair ohlcv data for interval in minutes
+    Pair: OHLCV data for interval in minutes
     """
     #print(gv.ticker2symbol[ctx.obj.ticker])
     print( ctx.obj.do_fetchOHLCV(symbol = gv.ticker2symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
     
 @pair.command()
 @click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
+#TODO limit argument
 @click.pass_context
 def list(ctx, what):
-    """display pairs informations"""
+    """Pair: (user) information"""
     print( ctx.obj.do_list(what = what, symbol = gv.ticker2symbol[ctx.obj.ticker], customParams = {}) )  #todo customparams for exchange if needed
 
 if __name__ == '__main__':
