@@ -30,7 +30,7 @@ class Order():
     #    'expiracy': 'none(default)|TBD'
     #}
 
-    def __init__(self, side, symbol, type, leverage, expiracy, id, amount, price):
+    def __init__(self, side, symbol, type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, amount, price, id = None):
         #TODO(future): Note, that some exchanges will not accept market orders (they allow limit orders only).
         #if exchange.has['createMarketOrder']:
 

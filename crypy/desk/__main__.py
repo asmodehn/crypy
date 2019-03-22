@@ -160,32 +160,33 @@ def pair(ctx, ticker):
 
 
 def order_options(ctx):
-    click.option('-ot', '--order-type', default='limit',
-                  type=click.Choice(['limit', 'market']), show_default=True)(ctx) #TODO others order types
+    click.option('-ot', '--order-type', default='limit', type=click.Choice(['Limit', 'Market']+['Stop', 'StopLimit', 'MarketIfTouched', 'LimitIfTouched', 'Pegged']), show_default=True)(ctx) #TODO limit & market are default order types for all exchanges, others are exchange specific
     #click.option('-lv', '--leverage', type=click.IntRange(1, 5), default=1, show_default=True)(ctx) #kraken
     click.option('-lv', '--leverage', type=click.IntRange(0, 100), default=5, show_default=True)(ctx) #bitmex leverage value: a number between 0.01 and 100. Send 0 to enable cross margin.
-    click.option('-exp', '--expiracy', type=str, default='none',
-                 show_default=True)(ctx)  # TODO use it #TODO handle datetime format
-                                          # #(https://click.palletsprojects.com/en/7.x/options/#callbacks-for-validation)
-    
+    click.option('--display-qty', type=int, help="Optional quantity to display in the book. Use 0 for a fully hidden order.")(ctx)
+    click.option('--stop_px', type=int, help="Optional trigger price for 'Stop', 'StopLimit', 'MarketIfTouched', and 'LimitIfTouched' orders. Use a price below the current price for stop-sell orders and buy-if-touched orders.")(ctx)
+    click.option('--peg-offset-value', type=int, help="Optional trailing offset from the current price for 'Stop', 'StopLimit', 'MarketIfTouched', and 'LimitIfTouched' orders; use a negative offset for stop-sell orders and buy-if-touched orders. Optional offset from the peg price for 'Pegged' orders.")(ctx)
+    click.option('--peg-price-type', type=click.Choice(['LastPeg', 'MidPricePeg', 'MarketPeg', 'PrimaryPeg', 'TrailingStopPeg']), show_default=True, help="Optional peg price type.")(ctx)
+    click.option('--exec-inst', type=click.Choice(['ParticipateDoNotInitiate', 'AllOrNone', 'MarkPrice', 'IndexPrice', 'LastPrice', 'Close', 'ReduceOnly', 'Fixed']), show_default=True, help="Optional execution instructions. 'AllOrNone' instruction requires display_qty to be 0. 'MarkPrice', 'IndexPrice' or 'LastPrice' instruction valid for 'Stop', 'StopLimit', 'MarketIfTouched', and 'LimitIfTouched' orders.")(ctx)
+    click.option('-exp', '--expiracy', type=str, default='none', show_default=True)(ctx) #TODO use it #todo replace by timeInForce on mex
     click.option('-id', '--id', type=str, default=None, help="id of order to update")(ctx)
-    click.argument('amount_price', nargs=2, type=float)(ctx)
-
+    click.argument('price', nargs=1, type=float, required=False)(ctx)
+    click.argument('amount', nargs=1, type=float, required=True)(ctx)
     return ctx
 
 
 # OR use functools.partial
-def make_order(ticker, order_type, leverage, expiracy, id, amount, price):
+def make_order(ticker, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price):
 
     def partial(side):
-        nonlocal ticker, order_type, leverage, expiracy, id, amount, price
+        #nonlocal ticker, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price
 
         if id is None:
             click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
         else :
             click.echo(f'Do you want to change order {id} with the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
 
-        order = Order(symbol=gv.ticker2symbol[ticker], side=side, type=order_type, leverage=leverage, expiracy=expiracy, id= id, amount=amount, price=price)
+        order = Order(symbol=gv.ticker2symbol[ticker], side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
         order.showData()
 
         if click.confirm('Please confirm' + ( ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if leverage > 1 else '')): #abort (but don't die) here if No is selected (default) otherwise continue code below
@@ -199,12 +200,12 @@ def make_order(ticker, order_type, leverage, expiracy, id, amount, price):
 @pair.command()
 @order_options
 @click.pass_context
-def short(ctx, order_type, leverage, expiracy, id, amount_price):
+def short(ctx, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price):
     """
     Pair: Create/Update a SHORT order
     """
     side = "sell" #ccxt value
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, id = id, amount=amount_price[0], price=amount_price[1])(side=side))
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
     
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
@@ -213,12 +214,25 @@ def short(ctx, order_type, leverage, expiracy, id, amount_price):
 @pair.command()
 @order_options
 @click.pass_context
-def long(ctx, order_type, leverage, expiracy, id, amount_price):
+def long(ctx, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price):
     """
     Pair: Create/Update a LONG order
     """
     side = "buy" #ccxt value
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage = leverage, expiracy = expiracy, id = id, amount=amount_price[0], price=amount_price[1])(side=side))
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
+
+    ##TEMP DEBUG
+    #ctx.invoke(list, what='orders')
+
+@pair.command()
+@click.option('--side', type=click.Choice(['sell', 'buy']), show_default=True)
+@order_options
+@click.pass_context
+def stop_loss(ctx, side, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price, order_type = 'Stop'):
+    """
+    Pair: MARKET STOP LOSS ON AN ORDER
+    """
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
 
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
