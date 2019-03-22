@@ -129,3 +129,10 @@ class Desk(object):
 
     def do_fetchTrades(self, symbol, since, limit, customParams):
         return self._ccxtMethod('fetchTrades', symbol = symbol, since = since, limit = limit, params = customParams)
+
+    def do_fetchMarketPrice(self, symbol):
+        orderbook = self._ccxtMethod('fetch_order_book', symbol = symbol)
+        bid = orderbook['bids'][0][0] if len (orderbook['bids']) > 0 else None
+        ask = orderbook['asks'][0][0] if len (orderbook['asks']) > 0 else None
+        spread = (ask - bid) if (bid and ask) else None
+        return { 'bid': bid, 'ask': ask, 'spread': spread }

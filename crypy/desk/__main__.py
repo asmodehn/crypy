@@ -263,6 +263,14 @@ def ohlcv(ctx, timeframe, since, limit):
     """
     #print(gv.ticker2symbol[ctx.obj.ticker])
     print( ctx.obj.do_fetchOHLCV(symbol = gv.ticker2symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+
+@pair.command()
+@click.pass_context
+def market_price(ctx):
+    """
+    Pair: Current Market Price
+    """
+    print( 'market price: ' + str(ctx.obj.do_fetchMarketPrice(symbol = gv.ticker2symbol[ctx.obj.ticker])) )
     
 @pair.command()
 @click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
