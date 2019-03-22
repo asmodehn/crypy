@@ -60,7 +60,15 @@ class Order():
             exg = desk.exchange
             leverage = self.data['leverage']
             del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
-            self.data['amount'] = int(self.data['amount'] * self.data['price']) #Mex Specifik: nb of contracts to order (int) == order amount * order price
+            
+            #TODO: Mex Specifik: nb of contracts to order (int) == order amount * order price
+            if self.data['price'] is None or self.data['type'] not in ['Limit', 'StopLimit', 'LimitIfTouched']: #no price, aka market order
+                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
+                price = (marketPrice['bid'] + marketPrice['ask'])/2
+            else:
+                price = self.data['price']
+
+            self.data['amount'] = int(self.data['amount'] * price)
 
             if leverage > 1 and (not hasattr(exg, 'privatePostPositionLeverage')): #working on bitmex, check other exchanges
                 return f'privatePostPositionLeverage() not available for this exchange'
@@ -81,7 +89,7 @@ class Order():
             logger.msg(str(response2))
 
             #second post/update order
-            if id is None:
+            if orderId is None:
                 response = exg.createOrder(**dict(self.data))
             else:
                 response = exg.editOrder(**dict(self.data))
