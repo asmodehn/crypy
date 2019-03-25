@@ -170,16 +170,13 @@ def order_options_shortslongs(ctx):
     #click.option('-lv', '--leverage', type=click.IntRange(1, 5), default=1, show_default=True)(ctx) #kraken
     click.option('-lv', '--leverage', type=click.IntRange(0, 100), default=5, show_default=True)(ctx) #bitmex leverage value: a number between 0.01 and 100. Send 0 to enable cross margin.
     click.option('--display-qty', type=int, help="Optional quantity to display in the book. Use 0 for a fully hidden order.")(ctx)
-    click.argument('price', nargs=1, type=float, required=False)(ctx)
     click.argument('amount', nargs=1, type=float, required=True)(ctx)
+    click.argument('price', nargs=1, type=float, required=False)(ctx)
     return ctx
 
 def order_options_stops(ctx):
-    click.option('--side', type=click.Choice(['sell', 'buy']), help="Order side.")(ctx)
     click.option('--peg-offset-value', type=int, help="Optional trailing offset from the current price; use a negative offset for stop-sell orders and buy-if-touched orders. Optional offset from the peg price for 'Pegged' orders.")(ctx)
     click.option('--peg-price-type', type=click.Choice(['LastPeg', 'MidPricePeg', 'MarketPeg', 'PrimaryPeg', 'TrailingStopPeg']), show_default=True, help="Optional peg price type.")(ctx)
-    click.argument('amount', nargs=1, type=float, required=False)(ctx)
-    click.argument('price', nargs=1, type=float, required=True)(ctx)
     return ctx
 
 # OR use functools.partial
@@ -235,11 +232,14 @@ def long(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
 
 @pair.command()
 @order_options_all
+@click.option('--side', type=click.Choice(['sell', 'buy']), help="Order side.")
 @order_options_stops
+@click.argument('price', nargs=1, type=float, required=True)
+@click.argument('amount', nargs=1, type=float, required=False)
 @click.pass_context
 def stop_loss(ctx, side, peg_offset_value, peg_price_type, expiracy, id, price, amount):
     """
-    Pair: MARKET STOP LOSS ON AN ORDER
+    Pair: Set a stop loss on a position (TODO: what if no position ?)
     """
     exec_inst = 'IndexPrice,Close'
     order_type = 'Stop' #TODO ['Stop', 'StopLimit', 'MarketIfTouched', 'LimitIfTouched', 'Pegged']
@@ -248,7 +248,37 @@ def stop_loss(ctx, side, peg_offset_value, peg_price_type, expiracy, id, price, 
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
 
-#TODO: stop-short, stop-long, trailing-stop-loss, trailing-stop-short, trailing-stop-buy and all take profits
+@pair.command()
+@order_options_all
+@order_options_stops
+@click.argument('amount', nargs=1, type=float, required=True)
+@click.argument('price', nargs=1, type=float, required=True)
+@click.pass_context
+def stop_short(ctx, peg_offset_value, peg_price_type, expiracy, id, amount, price):
+    """
+    Pair: Create/Update a market STOP SHORT order
+    """
+    exec_inst = 'IndexPrice'
+    side = "sell"
+    order_type = 'StopShort'
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+
+@pair.command()
+@order_options_all
+@order_options_stops
+@click.argument('amount', nargs=1, type=float, required=True)
+@click.argument('price', nargs=1, type=float, required=True)
+@click.pass_context
+def stop_long(ctx, peg_offset_value, peg_price_type, expiracy, id, amount, price):
+    """
+    Pair: Create/Update a market STOP LONG order
+    """
+    exec_inst = 'IndexPrice'
+    side = "buy"
+    order_type = 'StopLong'
+    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+
+#TODO: trailing-stop-loss, trailing-stop-short, trailing-stop-buy and all take profits
 
 @pair.command()
 @click.argument('ids', nargs=-1, type=str)

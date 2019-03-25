@@ -99,7 +99,27 @@ class Order():
 
             
             elif self.data['type'] in ['Stop']:
+                if not self.data['amount'] is None: #don't care if we don't have an amount but if we do we need to transform it into bitmex contracts
+                    self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
+                    self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
+
+            elif self.data['type'] in ['StopShort', 'StopLong']:
+                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
+
+                #compare to market price
+                if self.data['type'] is 'StopShort':
+                    if self.data['params']['stopPx'] >= marketPrice['bid']:
+                        return f'Error: StopShort value is above market price.'
+                elif self.data['type'] is 'StopLong':
+                    if self.data['params']['stopPx'] <= marketPrice['ask']:
+                        return f'Error: StopLong value is below market price.'
+
+                #Mex valid order type
+                self.data['type'] =  'Stop'
+
+                #Mex contracts transformation
                 self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
+                self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
 
             #second post/update order
             if orderId is None:
