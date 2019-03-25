@@ -44,7 +44,10 @@ class Order():
             'id': id,
             'params' : {
                 'stopPx': stop_px,
-                "execInst" : exec_inst
+                "execInst" : exec_inst,
+                "displayQty" : display_qty,
+                "pegOffsetValue" : peg_offset_value,
+                "pegPriceType" : peg_price_type
              }
         }
         ## TODO overrides for other orders
@@ -102,6 +105,21 @@ class Order():
                 if not self.data['amount'] is None: #don't care if we don't have an amount but if we do we need to transform it into bitmex contracts
                     self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
                     self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
+
+
+            elif self.data['type'] in ['Pegged']:
+                #Mex valid order type
+                self.data['type'] =  'Stop'
+
+                if not self.data['amount'] is None: #amount to bitmex contracts
+                    
+                    marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
+                    price = (marketPrice['bid'] + marketPrice['ask'])/2
+
+                    self.data['amount'] = int( self.data['amount'] * (price + self.data['params']['pegOffsetValue']) )
+                    self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
+                #else:
+                #    self.data['amount'] = 1
 
             elif self.data['type'] in ['StopShort', 'StopLong']:
                 marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
