@@ -101,7 +101,7 @@ class Order():
                 logger.msg(str(response2))
 
             
-            elif self.data['type'] in ['Stop']:
+            elif self.data['type'] in ['Stop', 'MarketIfTouched']:
                 if not self.data['amount'] is None: #don't care if we don't have an amount but if we do we need to transform it into bitmex contracts
                     self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
                     self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
@@ -134,6 +134,24 @@ class Order():
 
                 #Mex valid order type
                 self.data['type'] =  'Stop'
+
+                #Mex contracts transformation
+                self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
+                self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
+
+            elif self.data['type'] in ['MarketIfTouchedShort', 'MarketIfTouchedLong']:
+                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
+
+                #compare to market price
+                if self.data['type'] is 'MarketIfTouchedShort':
+                    if self.data['params']['stopPx'] >= marketPrice['ask']:
+                        return f'Error: MarketIfTouchedShort value is above market price.'
+                elif self.data['type'] is 'MarketIfTouchedLong':
+                    if self.data['params']['stopPx'] <= marketPrice['bid']:
+                        return f'Error: MarketIfTouchedLong value is below market price.'
+
+                #Mex valid order type
+                self.data['type'] =  'MarketIfTouched'
 
                 #Mex contracts transformation
                 self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
