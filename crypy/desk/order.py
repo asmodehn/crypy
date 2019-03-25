@@ -41,7 +41,11 @@ class Order():
             'amount' : amount,
             'price' : price,
             'leverage': leverage,
-            'id': id
+            'id': id,
+            'params' : {
+                'stopPx': stop_px,
+                "execInst" : exec_inst
+             }
         }
         ## TODO overrides for other orders
         #params = {
@@ -51,7 +55,7 @@ class Order():
 
     def showData(self): 
         for k, v in self.data.items():
-            print(f"¤ {k} -> {v}")
+            print(f" ¤ {k} -> {v}")
 
     def execute(self):
         try:
@@ -60,19 +64,8 @@ class Order():
             exg = desk.exchange
             leverage = self.data['leverage']
             del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
-            
-            #TODO: Mex Specifik: nb of contracts to order (int) == order amount * order price
-            if self.data['price'] is None or self.data['type'] not in ['Limit', 'StopLimit', 'LimitIfTouched']: #no price, aka market order
-                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
-                price = (marketPrice['bid'] + marketPrice['ask'])/2
-            else:
-                price = self.data['price']
 
-            self.data['amount'] = int(self.data['amount'] * price)
-
-            if leverage > 1 and (not hasattr(exg, 'privatePostPositionLeverage')): #working on bitmex, check other exchanges
-                return f'privatePostPositionLeverage() not available for this exchange'
-
+            ### ORDER ID HANDLING ###
             orderId = self.data['id']
             if orderId is None:
                 if not 'createOrder' in exg.has or not exg.has['createOrder']:
@@ -83,10 +76,30 @@ class Order():
                     return f'editOrder() not available for this exchange'
 
                 #TODO check side of new and old orders (aka when an id is present) are the same, otherwise ccxt error (mex: immediate liquidation error)
+            ### END ORDER ID HANDLING ###
+
             
-            #first set the leverage (NB: it changes leverage of existing orders too!)
-            response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
-            logger.msg(str(response2))
+            #Mex Specifik: nb of contracts to order (int) == order amount * order price
+            if self.data['type'] in ['Market', 'Limit']:
+                if self.data['price'] is None or self.data['type'] is 'Market': #no price, aka market order
+                    marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
+                    price = (marketPrice['bid'] + marketPrice['ask'])/2
+                else:
+                    price = self.data['price']
+
+                self.data['amount'] = int(self.data['amount'] * price)
+
+                if leverage > 1 and (not hasattr(exg, 'privatePostPositionLeverage')): #working on bitmex, check other exchanges
+                    return f'privatePostPositionLeverage() not available for this exchange'
+
+            
+                #first set the leverage (NB: it changes leverage of existing orders too!)
+                response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
+                logger.msg(str(response2))
+
+            
+            elif self.data['type'] in ['Stop']:
+                self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
 
             #second post/update order
             if orderId is None:
