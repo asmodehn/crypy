@@ -255,6 +255,7 @@ def stop_loss(ctx, side, full, expiracy, id, amount, price):
 @pair.command()
 @order_options_all
 @click.option('--side', type=click.Choice(['sell', 'buy']), help="Order side.")
+@click.option('--full', type=bool, is_flag=True, default=False, show_default=True, help="Full Stop Loss and close every existing order on pair. NB: this option have precedence over amount if set.")
 @order_options_stops
 @click.argument('amount', nargs=1, type=float, required=False)
 @click.argument('offset-price', nargs=1, type=float, required=True)
@@ -263,7 +264,10 @@ def trailing_stop_loss(ctx, side, expiracy, id, amount, offset_price):
     """
     Pair: Set/Update a trailing stop loss for a position (TODO: what if no position ?)
     """
-    exec_inst = 'IndexPrice,Close'
+    exec_inst = 'IndexPrice'
+    if full :
+        exec_inst += ',Close'
+        amount = None
     order_type = 'Pegged'
     peg_price_type = 'TrailingStopPeg'
     print(make_order(ticker = ctx.obj.ticker, order_type = order_type, peg_offset_value=offset_price, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
