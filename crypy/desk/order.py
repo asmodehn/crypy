@@ -41,9 +41,9 @@ class Order():
                 "pegPriceType" : peg_price_type
              }
         }
-        self.format()
 
     def format(self):
+        #TODO error handling
         #TODO: MAYBE we should think about passing the exchange to the order class directly on class instanciation and use one instance ?
         desk = click.get_current_context().obj
         exg = desk.exchange
@@ -101,6 +101,8 @@ class Order():
 
 
             else: #limit order [TODO(future) 'StopLimit' and take profit limit ('LimitIfTouched') orders maybe]
+                if 'price' not in self.data or self.data['price'] is None:
+                    return f'Error: limit order need a price value'
                 price = self.data['price']
 
 

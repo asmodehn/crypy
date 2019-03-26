@@ -187,13 +187,18 @@ def make_order(ticker, order_type, expiracy, id = None, amount = None, price = N
 
     def partial(side):
         #nonlocal ticker, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price
+        order = Order(symbol=gv.ticker2symbol[ticker], side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
+        
+        orderValidation = order.format()
+        if orderValidation is not None:
+            return orderValidation
 
+        
         if id is None:
             click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
         else:
             click.echo(f'Do you want to change order {id} with the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
 
-        order = Order(symbol=gv.ticker2symbol[ticker], side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
         order.showData()
 
         if click.confirm('Please confirm' + ( ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if (not leverage is None and leverage > 1) else '')): #abort (but don't die!) here if No is selected (default) otherwise continue code below
