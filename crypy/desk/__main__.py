@@ -175,8 +175,11 @@ def order_options_shortslongs(ctx):
     return ctx
 
 def order_options_stops(ctx):
+    click.option('--side', type=click.Choice(['sell', 'buy']), help="Order side.")(ctx)
+    click.option('--full', type=bool, is_flag=True, default=False, show_default=True, help="Full Stop Loss and close every existing order on pair. NB: this option have precedence over amount if set.")(ctx)
     #click.option('--peg-offset-value', type=int, help="Optional trailing offset from the current price; use a negative offset for stop-sell orders and buy-if-touched orders. Optional offset from the peg price for 'Pegged' orders.")(ctx)
     #click.option('--peg-price-type', type=click.Choice(['LastPeg', 'MidPricePeg', 'MarketPeg', 'PrimaryPeg', 'TrailingStopPeg']), show_default=True, help="Optional peg price type.")(ctx)
+    click.argument('amount', nargs=1, type=float, required=False)(ctx)
     return ctx
 
 # OR use functools.partial
@@ -232,15 +235,12 @@ def long(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
 
 @pair.command()
 @order_options_all
-@click.option('--side', type=click.Choice(['sell', 'buy']), help="Order side.")
-@click.option('--full', type=bool, is_flag=True, default=False, show_default=True, help="Full Stop Loss and close every existing order on pair. NB: this option have precedence over amount if set.")
 @order_options_stops
-@click.argument('amount', nargs=1, type=float, required=False)
 @click.argument('price', nargs=1, type=float, required=True)
 @click.pass_context
-def stop_loss(ctx, side, full, expiracy, id, amount, price):
+def stop(ctx, side, full, expiracy, id, amount, price):
     """
-    Pair: Set/Update a stop loss for a position (TODO: what if no position ?)
+    Pair: Set/Update a stop for a position (TODO: what if no position ?)
     """
     exec_inst = 'IndexPrice'
     if full :
@@ -254,15 +254,12 @@ def stop_loss(ctx, side, full, expiracy, id, amount, price):
 
 @pair.command()
 @order_options_all
-@click.option('--side', type=click.Choice(['sell', 'buy']), help="Order side.")
-@click.option('--full', type=bool, is_flag=True, default=False, show_default=True, help="Full Stop Loss and close every existing order on pair. NB: this option have precedence over amount if set.")
 @order_options_stops
-@click.argument('amount', nargs=1, type=float, required=False)
 @click.argument('offset-price', nargs=1, type=float, required=True)
 @click.pass_context
-def trailing_stop_loss(ctx, side, expiracy, id, amount, offset_price):
+def trailing_stop(ctx, side, expiracy, id, amount, offset_price):
     """
-    Pair: Set/Update a trailing stop loss for a position (TODO: what if no position ?)
+    Pair: Set/Update a trailing stop for a position (TODO: what if no position ?)
     """
     exec_inst = 'IndexPrice'
     if full :
@@ -274,10 +271,8 @@ def trailing_stop_loss(ctx, side, expiracy, id, amount, offset_price):
 
 @pair.command()
 @order_options_all
-@click.option('--side', type=click.Choice(['sell', 'buy']), help="Order side.")
-@click.option('--full', is_flag=True, type=bool, default=False, show_default=True, help="Full Take Profit and close every existing order on pair. NB: this option have precedence over amount if set.")
 @order_options_stops
-@click.argument('amount', nargs=1, type=float, required=False)
+#TODO: amount in % could be useful
 @click.argument('price', nargs=1, type=float, required=True)
 @click.pass_context
 def take_profit(ctx, side, full, expiracy, id, amount, price):
@@ -293,65 +288,65 @@ def take_profit(ctx, side, full, expiracy, id, amount, price):
     print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
 
-@pair.command()
-@order_options_all
-@order_options_stops
-@click.argument('amount', nargs=1, type=float, required=True)
-@click.argument('price', nargs=1, type=float, required=True)
-@click.pass_context
-def stop_short(ctx, expiracy, id, amount, price):
-    """
-    Pair: Create/Update a market STOP SHORT order
-    """
-    exec_inst = 'IndexPrice'
-    side = "sell"
-    order_type = 'StopShort'
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+#@pair.command()
+#@order_options_all
+#@order_options_stops
+#@click.argument('amount', nargs=1, type=float, required=True)
+#@click.argument('price', nargs=1, type=float, required=True)
+#@click.pass_context
+#def stop_short(ctx, expiracy, id, amount, price):
+#    """
+#    Pair: Create/Update a market STOP SHORT order
+#    """
+#    exec_inst = 'IndexPrice'
+#    side = "sell"
+#    order_type = 'StopShort'
+#    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
-@pair.command()
-@order_options_all
-@order_options_stops
-@click.argument('amount', nargs=1, type=float, required=True)
-@click.argument('price', nargs=1, type=float, required=True)
-@click.pass_context
-def stop_long(ctx, expiracy, id, amount, price):
-    """
-    Pair: Create/Update a market STOP LONG order
-    """
-    exec_inst = 'IndexPrice'
-    side = "buy"
-    order_type = 'StopLong'
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+#@pair.command()
+#@order_options_all
+#@order_options_stops
+#@click.argument('amount', nargs=1, type=float, required=True)
+#@click.argument('price', nargs=1, type=float, required=True)
+#@click.pass_context
+#def stop_long(ctx, expiracy, id, amount, price):
+#    """
+#    Pair: Create/Update a market STOP LONG order
+#    """
+#    exec_inst = 'IndexPrice'
+#    side = "buy"
+#    order_type = 'StopLong'
+#    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
-@pair.command()
-@order_options_all
-@order_options_stops
-@click.argument('amount', nargs=1, type=float, required=True)
-@click.argument('price', nargs=1, type=float, required=True)
-@click.pass_context
-def take_profit_short(ctx, expiracy, id, amount, price):
-    """
-    Pair: Create/Update a market SHORT TAKE PROFIT order
-    """
-    exec_inst = 'IndexPrice'
-    side = "sell"
-    order_type = 'MarketIfTouchedShort'
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+#@pair.command()
+#@order_options_all
+#@order_options_stops
+#@click.argument('amount', nargs=1, type=float, required=True)
+#@click.argument('price', nargs=1, type=float, required=True)
+#@click.pass_context
+#def take_profit_short(ctx, expiracy, id, amount, price):
+#    """
+#    Pair: Create/Update a market SHORT TAKE PROFIT order
+#    """
+#    exec_inst = 'IndexPrice'
+#    side = "sell"
+#    order_type = 'MarketIfTouchedShort'
+#    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
-@pair.command()
-@order_options_all
-@order_options_stops
-@click.argument('amount', nargs=1, type=float, required=True)
-@click.argument('price', nargs=1, type=float, required=True)
-@click.pass_context
-def take_profit_long(ctx, expiracy, id, amount, price):
-    """
-    Pair: Create/Update a market LONG TAKE PROFIT order
-    """
-    exec_inst = 'IndexPrice'
-    side = "buy"
-    order_type = 'MarketIfTouchedLong'
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+#@pair.command()
+#@order_options_all
+#@order_options_stops
+#@click.argument('amount', nargs=1, type=float, required=True)
+#@click.argument('price', nargs=1, type=float, required=True)
+#@click.pass_context
+#def take_profit_long(ctx, expiracy, id, amount, price):
+#    """
+#    Pair: Create/Update a market LONG TAKE PROFIT order
+#    """
+#    exec_inst = 'IndexPrice'
+#    side = "buy"
+#    order_type = 'MarketIfTouchedLong'
+#    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
 #TODO: we might regroup stop_long w take_profit_long and stop_short w take_profit_short
 
