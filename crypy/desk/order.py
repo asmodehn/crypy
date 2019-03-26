@@ -142,9 +142,9 @@ class Order():
             #NB: we do it here coz we cant the leverage value to be visible when showing data
             leverage = self.data['leverage']
             if leverage is not None:
-                del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
                 response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
                 logger.msg(str(response2))
+            del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
 
             #second post/update order
             if 'id' not in self.data or self.data['id'] is None:
