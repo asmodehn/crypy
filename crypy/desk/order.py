@@ -41,6 +41,90 @@ class Order():
                 "pegPriceType" : peg_price_type
              }
         }
+        self.format()
+
+    def format(self):
+        #TODO: MAYBE we should think about passing the exchange to the order class directly on class instanciation and use one instance ?
+        desk = click.get_current_context().obj
+        exg = desk.exchange
+
+        ### LEVERAGE handling ###
+        leverage = self.data['leverage']
+        del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
+        ### end LEVERAGE handling ###
+
+        ### ID handling ###
+        orderId = self.data['id']
+        if orderId is None:
+            if not 'createOrder' in exg.has or not exg.has['createOrder']:
+                return f'createOrder() not available for this exchange'
+            del self.data['id'] #remove the id from the order data coz createOrder() doesnt handle it
+        else:
+            if not 'editOrder' in exg.has or not exg.has['editOrder']:
+                return f'editOrder() not available for this exchange'
+
+            #TODO check side of new and old orders (aka when an id is present) are the same, otherwise ccxt error (mex: immediate liquidation error)
+        ### end ID handling ###
+
+            
+        ### TYPE handling ###
+        if self.data['type'] in ['Market', 'Limit']:
+            if leverage > 1:
+                if not hasattr(exg, 'privatePostPositionLeverage'): #working on bitmex, check other exchanges
+                    return f'privatePostPositionLeverage() not available for this exchange'
+
+            if self.data['type'] is 'Market': #market order
+                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
+
+                if self.data['price'] is None: #market order -> 'real' Market order
+                    price = (marketPrice['bid'] + marketPrice['ask'])/2
+
+                else: #stop-buy|sell and take-profit-buy|sell orders
+                    #stop/tp price
+                    price = self.data['price']
+                    self.data['params']['stopPx'] = price
+                    del self.data['price']
+
+                    self.data['params']['exec_inst'] = 'IndexPrice'
+                    
+                    #Mex valid order type
+                    if self.data['side'] is 'buy':
+                        if price >= marketPrice['bid']: #stop-buy
+                            self.data['type'] =  'Stop'
+                        elif price <= marketPrice['ask']: #tp-buy
+                            self.data['type'] =  'MarketIfTouched'
+                    if self.data['side'] is 'sell':
+                        if price >= marketPrice['bid']: #tp-sell
+                            self.data['type'] =  'MarketIfTouched'
+                        elif price <= marketPrice['ask']: #stop-sell
+                            self.data['type'] =  'Stop'
+
+
+            else: #limit order [TODO(future) 'StopLimit' and take profit limit ('LimitIfTouched') orders maybe]
+                price = self.data['price']
+
+
+            
+        elif self.data['type'] in ['Stop', 'MarketIfTouched']: #Stop & Take profit order
+            if not self.data['amount'] is None: #don't care if we don't have an amount but if we do we need to transform it into bitmex contracts
+                price = self.data['params']['stopPx']
+
+
+        elif self.data['type'] in ['Pegged']: #trailing stop order
+            #Mex valid order type
+            self.data['type'] =  'Stop'
+
+            if not self.data['amount'] is None:  #don't care if we don't have an amount but if we do we need to transform it into bitmex contracts
+                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
+                price = (marketPrice['bid'] + marketPrice['ask'])/2 + self.data['params']['pegOffsetValue'] #add offset to market price
+        ### end TYPE handling ###
+
+        ### AMOUNT handling ###
+        #Mex Specifik: nb of contracts to order (int) == order amount * order price
+        if not self.data['amount'] is None:
+            self.data['amount'] = int(self.data['amount'] * price)
+            self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
+        ### end AMOUNT handling ###
 
     def showData(self): 
         for key, value in self.data.items():
@@ -51,116 +135,30 @@ class Order():
             else:
                 print(f" ○ {key}: {value}")
 
-    def execute(self):
+    def execute(self, leverage):
         try:
             #TODO: MAYBE we should think about passing the exchange to the order class directly on class instanciation and use one instance ?
-            desk = click.get_current_context().obj
-            exg = desk.exchange
-            leverage = self.data['leverage']
-            del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
+            exg = click.get_current_context().obj.exchange
 
-            ### ORDER ID HANDLING ###
-            orderId = self.data['id']
-            if orderId is None:
-                if not 'createOrder' in exg.has or not exg.has['createOrder']:
-                    return f'createOrder() not available for this exchange'
-                del self.data['id'] #remove the id from the order data coz createOrder() doesnt handle it
-            else:
-                if not 'editOrder' in exg.has or not exg.has['editOrder']:
-                    return f'editOrder() not available for this exchange'
-
-                #TODO check side of new and old orders (aka when an id is present) are the same, otherwise ccxt error (mex: immediate liquidation error)
-            ### END ORDER ID HANDLING ###
-
-            
-            #Mex Specifik: nb of contracts to order (int) == order amount * order price
-            if self.data['type'] in ['Market', 'Limit']:
-                if self.data['price'] is None or self.data['type'] is 'Market': #no price, aka market order
-                    marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
-                    price = (marketPrice['bid'] + marketPrice['ask'])/2
-                else:
-                    price = self.data['price']
-
-                self.data['amount'] = int(self.data['amount'] * price)
-
-                if leverage > 1 and (not hasattr(exg, 'privatePostPositionLeverage')): #working on bitmex, check other exchanges
-                    return f'privatePostPositionLeverage() not available for this exchange'
-
-            
-                #first set the leverage (NB: it changes leverage of existing orders too!)
+            #first handle the leverage (NB: it changes leverage of existing orders too!)
+            if leverage is not None:
                 response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
                 logger.msg(str(response2))
 
-            
-            elif self.data['type'] in ['Stop', 'MarketIfTouched']:
-                if not self.data['amount'] is None: #don't care if we don't have an amount but if we do we need to transform it into bitmex contracts
-                    self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
-                    self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
-
-
-            elif self.data['type'] in ['Pegged']:
-                #Mex valid order type
-                self.data['type'] =  'Stop'
-
-                if not self.data['amount'] is None: #amount to bitmex contracts
-                    
-                    marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
-                    price = (marketPrice['bid'] + marketPrice['ask'])/2
-
-                    self.data['amount'] = int( self.data['amount'] * (price + self.data['params']['pegOffsetValue']) )
-                    self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
-                #else:
-                #    self.data['amount'] = 1
-
-            elif self.data['type'] in ['StopShort', 'StopLong']:
-                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
-
-                #compare to market price
-                if self.data['type'] is 'StopShort':
-                    if self.data['params']['stopPx'] >= marketPrice['bid']:
-                        return f'Error: StopShort value is above market price.'
-                elif self.data['type'] is 'StopLong':
-                    if self.data['params']['stopPx'] <= marketPrice['ask']:
-                        return f'Error: StopLong value is below market price.'
-
-                #Mex valid order type
-                self.data['type'] =  'Stop'
-
-                #Mex contracts transformation
-                self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
-                self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
-
-            elif self.data['type'] in ['MarketIfTouchedShort', 'MarketIfTouchedLong']:
-                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
-
-                #compare to market price
-                if self.data['type'] is 'MarketIfTouchedShort':
-                    if self.data['params']['stopPx'] >= marketPrice['ask']:
-                        return f'Error: MarketIfTouchedShort value is above market price.'
-                elif self.data['type'] is 'MarketIfTouchedLong':
-                    if self.data['params']['stopPx'] <= marketPrice['bid']:
-                        return f'Error: MarketIfTouchedLong value is below market price.'
-
-                #Mex valid order type
-                self.data['type'] =  'MarketIfTouched'
-
-                #Mex contracts transformation
-                self.data['amount'] = int(self.data['amount'] * self.data['params']['stopPx'])
-                self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
-
             #second post/update order
-            if orderId is None:
+            if 'id' not in self.data or self.data['id'] is None:
                 response = exg.createOrder(**dict(self.data))
             else:
                 response = exg.editOrder(**dict(self.data))
                 
-            orderId = response['id']
             logger.msg(str(response))
 
-            return 'order_id: ' + orderId
+            return 'order_id: ' + response['id']
 
         except ccxt.BaseError as error:
             return error.args[0]
+        except Exception as error:
+            return "Error: " + str(type(error)) + " " + str(error)
 
     @staticmethod
     def cancel(order_ids):
