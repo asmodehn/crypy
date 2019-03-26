@@ -244,7 +244,7 @@ def long(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
 @click.pass_context
 def stop(ctx, side, full, expiracy, id, amount, price):
     """
-    Pair: Set/Update a stop for a position (TODO: what if no position ?)
+    Pair: Set/Update a stop for a position (WARNING: ATM be careful if no position and with the --side option which might trigger a Market order (TODO abstract this))
     """
     exec_inst = 'IndexPrice'
     if full :
@@ -263,7 +263,7 @@ def stop(ctx, side, full, expiracy, id, amount, price):
 @click.pass_context
 def trailing_stop(ctx, side, expiracy, id, amount, offset_price):
     """
-    Pair: Set/Update a trailing stop for a position (TODO: what if no position ?)
+    Pair: Set/Update a trailing stop for a position (WARNING: ATM be careful if no position and with the --side option which might trigger a Market order (TODO abstract this))
     """
     exec_inst = 'IndexPrice'
     if full :
@@ -282,7 +282,7 @@ def trailing_stop(ctx, side, expiracy, id, amount, offset_price):
 @click.pass_context
 def take_profit(ctx, side, full, expiracy, id, amount, price):
     """
-    Pair: Set/Update a take profit order on a position (TODO: what if no position ?)
+    Pair: Set/Update a take profit order on a position (WARNING: ATM be careful if no position and with the --side option which might trigger a Market order (TODO abstract this))
     """
     exec_inst = 'IndexPrice'
     if full :
@@ -353,5 +353,8 @@ def list(ctx, what):
     print( ctx.obj.do_list(what = what, symbol = gv.ticker2symbol[ctx.obj.ticker], customParams = {}) )  #todo customparams for exchange if needed
 
 if __name__ == '__main__':
-    cli()
+    try:
+        cli()
+    except:
+         pass
     
