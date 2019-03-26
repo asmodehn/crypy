@@ -69,7 +69,7 @@ class Order():
             if not hasattr(exg, 'privatePostPositionLeverage'):
                 return f'privatePostPositionLeverage() not available for this exchange'
 
-            if self.data['type'] is 'Market': #market order
+            if self.data['type'] == 'Market': #market order
                 marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
 
                 if self.data['price'] is None: #market order -> 'real' Market order
@@ -119,7 +119,7 @@ class Order():
 
         ### AMOUNT handling ###
         #Mex Specifik: nb of contracts to order (int) == order amount * order price
-        if not self.data['amount'] is None:
+        if self.data['amount'] is not None:
             self.data['amount'] = int(self.data['amount'] * price)
             self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
         ### end AMOUNT handling ###
