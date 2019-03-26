@@ -20,18 +20,9 @@ class Order():
     Order class WIP
     abstract
     """
-    #struct = {
-    #    'symbol' : 'TBD',
-    #    'side': 'buy|sell',
-    #    'type': 'limit(default)|market [future: |stop limit|stop market|take profit|traling stop]', #TODO other useful types need to overide exchange params https://github.com/ccxt/ccxt/wiki/Manual#overriding-unified-api-params
-    #    'amount': 'TBD',
-    #    'price': 'TBD',
-    #    'leverage': '1->5(default)',
-    #    'expiracy': 'none(default)|TBD'
-    #}
 
     def __init__(self, side, symbol, type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, amount, price, id = None):
-        #TODO(future): Note, that some exchanges will not accept market orders (they allow limit orders only).
+        #TODO(future): Note, that some exchanges will not accept market orders (they only allow limit orders).
         #if exchange.has['createMarketOrder']:
 
         self.data = {
@@ -50,15 +41,15 @@ class Order():
                 "pegPriceType" : peg_price_type
              }
         }
-        ## TODO overrides for other orders
-        #params = {
-        #    'stopPrice': 123.45,  # your stop price
-        #    'type': 'stopLimit',
-        #}
 
     def showData(self): 
-        for k, v in self.data.items():
-            print(f" ¤ {k} -> {v}")
+        for key, value in self.data.items():
+            if type(value) is dict:
+                print(f" ○ {key}:")
+                for subKey, subValue in value.items():
+                    print(f"    • {subKey}: {subValue}")
+            else:
+                print(f" ○ {key}: {value}")
 
     def execute(self):
         try:
