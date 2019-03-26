@@ -48,11 +48,6 @@ class Order():
         desk = click.get_current_context().obj
         exg = desk.exchange
 
-        ### LEVERAGE handling ###
-        leverage = self.data['leverage']
-        del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
-        ### end LEVERAGE handling ###
-
         ### ID handling ###
         orderId = self.data['id']
         if orderId is None:
@@ -69,9 +64,10 @@ class Order():
             
         ### TYPE handling ###
         if self.data['type'] in ['Market', 'Limit']:
-            if leverage > 1:
-                if not hasattr(exg, 'privatePostPositionLeverage'): #working on bitmex, check other exchanges
-                    return f'privatePostPositionLeverage() not available for this exchange'
+            #if self.data['leverage'] > 1:
+            #set leverage in call cases, working on bitmex, check other exchanges
+            if not hasattr(exg, 'privatePostPositionLeverage'):
+                return f'privatePostPositionLeverage() not available for this exchange'
 
             if self.data['type'] is 'Market': #market order
                 marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
@@ -137,13 +133,16 @@ class Order():
             else:
                 print(f" ○ {key}: {value}")
 
-    def execute(self, leverage):
+    def execute(self):
         try:
             #TODO: MAYBE we should think about passing the exchange to the order class directly on class instanciation and use one instance ?
             exg = click.get_current_context().obj.exchange
 
             #first handle the leverage (NB: it changes leverage of existing orders too!)
+            #NB: we do it here coz we cant the leverage value to be visible when showing data
+            leverage = self.data['leverage']
             if leverage is not None:
+                del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
                 response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
                 logger.msg(str(response2))
 

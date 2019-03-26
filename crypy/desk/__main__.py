@@ -192,7 +192,6 @@ def make_order(ticker, order_type, expiracy, id = None, amount = None, price = N
         orderValidation = order.format()
         if orderValidation is not None:
             return orderValidation
-
         
         if id is None:
             click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
@@ -202,7 +201,7 @@ def make_order(ticker, order_type, expiracy, id = None, amount = None, price = N
         order.showData()
 
         if click.confirm('Please confirm' + ( ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if (not leverage is None and leverage > 1) else '')): #abort (but don't die!) here if No is selected (default) otherwise continue code below
-            return order.execute(leverage)
+            return order.execute()
         else:
             return "order execution aborted"
 
