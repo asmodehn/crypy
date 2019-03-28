@@ -305,6 +305,8 @@ def cancel_order(ctx, ids):
     """
     Order.cancel(order_ids=ids)
 
+#TODO cancel all orders
+
 @pair.command()
 @click.option('-l', '--limit', type=int, default=7, show_default=True)
 @click.pass_context
