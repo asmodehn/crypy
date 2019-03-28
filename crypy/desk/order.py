@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import click
-
 import structlog
 filename = 'log.txt'
 file = open( filename, 'a') #TODO where do we close it
@@ -21,9 +19,11 @@ class Order():
     abstract
     """
 
-    def __init__(self, side, symbol, type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, amount, price, id = None):
+    def __init__(self, exchange, side, symbol, type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, amount, price, id = None):
         #TODO(future): Note, that some exchanges will not accept market orders (they only allow limit orders).
         #if exchange.has['createMarketOrder']:
+
+        self.exchange = exchange
 
         self.data = {
             'symbol' : symbol,
@@ -44,18 +44,15 @@ class Order():
 
     def format(self):
         #TODO error handling
-        #TODO: MAYBE we should think about passing the exchange to the order class directly on class instanciation and use one instance ?
-        desk = click.get_current_context().obj
-        exg = desk.exchange
 
         ### ID handling ###
         orderId = self.data['id']
         if orderId is None:
-            if not 'createOrder' in exg.has or not exg.has['createOrder']:
+            if not 'createOrder' in self.exchange.has or not self.exchange.has['createOrder']:
                 return f'createOrder() not available for this exchange'
             del self.data['id'] #remove the id from the order data coz createOrder() doesnt handle it
         else:
-            if not 'editOrder' in exg.has or not exg.has['editOrder']:
+            if not 'editOrder' in self.exchange.has or not self.exchange.has['editOrder']:
                 return f'editOrder() not available for this exchange'
 
             #TODO check side of new and old orders (aka when an id is present) are the same, otherwise ccxt error (mex: immediate liquidation error)
@@ -66,7 +63,7 @@ class Order():
         if self.data['type'] in ['Market', 'Limit']:
             #if self.data['leverage'] > 1:
             #set leverage in call cases, working on bitmex, check other exchanges
-            if not hasattr(exg, 'privatePostPositionLeverage'):
+            if not hasattr(self.exchange, 'privatePostPositionLeverage'):
                 return f'privatePostPositionLeverage() not available for this exchange'
 
             if self.data['type'] == 'Market': #market order
@@ -135,22 +132,19 @@ class Order():
 
     def execute(self):
         try:
-            #TODO: MAYBE we should think about passing the exchange to the order class directly on class instanciation and use one instance ?
-            exg = click.get_current_context().obj.exchange
-
             #first handle the leverage (NB: it changes leverage of existing orders too!)
             #NB: we do it here coz we cant the leverage value to be visible when showing data
             leverage = self.data['leverage']
             if leverage is not None:
-                response2 = exg.privatePostPositionLeverage({"symbol": exg.markets[self.data['symbol']]['id'], "leverage": leverage})
+                response2 = self.exchange.privatePostPositionLeverage({"symbol": self.exchange.markets[self.data['symbol']]['id'], "leverage": leverage})
                 logger.msg(str(response2))
             del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
 
             #second post/update order
             if 'id' not in self.data or self.data['id'] is None:
-                response = exg.createOrder(**dict(self.data))
+                response = self.exchange.createOrder(**dict(self.data))
             else:
-                response = exg.editOrder(**dict(self.data))
+                response = self.exchange.editOrder(**dict(self.data))
                 
             logger.msg(str(response))
 
@@ -163,15 +157,14 @@ class Order():
 
     @staticmethod
     def cancel(order_ids):
-        exg = click.get_current_context().obj.exchange
-        if not 'cancelOrder' in exg.has or not exg.has['cancelOrder']:
+        if not 'cancelOrder' in self.exchange.has or not self.exchange.has['cancelOrder']:
             return f'cancelOrder() not available for this exchange'
 
         for order_id in order_ids:
             try:
-                exg.cancelOrder(order_id)
+                self.exchange.cancelOrder(order_id)
                 print(f'order(s) {order_id} canceled')
-                #TODO remove from log also
+                #TODO remove from order log also
             except ccxt.NetworkError as err:
                 #TODO retry cancelation
                 pass
@@ -184,6 +177,6 @@ class Order():
                 print(error.args[0])
 
     @staticmethod
-    def fetchL2OrderBook(symbol, limit):
-        orderbook = click.get_current_context().obj._ccxtMethod('fetchL2OrderBook', symbol = symbol, limit = limit)
+    def fetchL2OrderBook(desk, symbol, limit):
+        orderbook = desk._ccxtMethod('fetchL2OrderBook', symbol = symbol, limit = limit)
         return orderbook #TODO better format i guess

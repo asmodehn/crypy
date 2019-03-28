@@ -187,7 +187,7 @@ def make_order(ticker, order_type, expiracy, id = None, amount = None, price = N
 
     def partial(side):
         #nonlocal ticker, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price
-        order = Order(symbol=gv.ticker2symbol[ticker], side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
+        order = Order(exchange = click.get_current_context().obj.exchange, symbol=gv.ticker2symbol[ticker], side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
         
         orderValidation = order.format()
         if orderValidation is not None:
@@ -314,7 +314,7 @@ def orderbook(ctx, limit):
     """
     Pair: L2 orderbook
     """
-    print( Order.fetchL2OrderBook(symbol = gv.ticker2symbol[ctx.obj.ticker], limit = limit) )
+    print( Order.fetchL2OrderBook(desk = ctx, symbol = gv.ticker2symbol[ctx.obj.ticker], limit = limit) )
 
 @pair.command()
 @click.option('-s', '--since', type=datetime, show_default=True)
