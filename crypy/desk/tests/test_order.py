@@ -1,4 +1,5 @@
 import unittest
+#https://docs.python.org/3/library/unittest.mock.html
 
 import crypy.desk.global_vars as gv #TODO Validate it first
 from crypy.desk.desk import Desk #TODO Validate it first
@@ -10,7 +11,8 @@ class Test_order(unittest.TestCase):
 
     desk = Desk(exchange=exchangeName)
     exchange = desk.exchange
-    marketPrice = desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])
+    #marketPrice = desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])
+    marketPrice = { 'bid': 4000, 'ask': 4001, 'spread': 1 }
 
     ### defaults ###
     ticker = 'BTCUSD'
@@ -27,43 +29,165 @@ class Test_order(unittest.TestCase):
     exec_inst = None
     expiracy = None
 
+    def test_Exchange(self):
+        ccxtExchangeNeededMethods = [
+            'createMarketOrder',
+            'createOrder',
+            'editOrder',
+            'privatePostPositionLeverage',
+            'cancelOrder',
+            'fetchL2OrderBook'
+        ]
+        #TODO test 'do_fetchMarketPrice' exists on desk
 
-    def test_New(self):
-
-        order = Order(
-            exchange = self.exchange,
-            symbol=gv.ticker2symbol[self.ticker],
-            side=self.side,
-            type=self.order_type,
-            leverage=self.leverage,
-            display_qty=self.display_qty,
-            stop_px=self.stop_px,
-            peg_offset_value=self.peg_offset_value,
-            peg_price_type=self.peg_price_type,
-            exec_inst=self.exec_inst,
-            expiracy=self.expiracy,
-            id=self.id,
-            amount=self.amount,
-            price=self.price
-        )
-
-        orderValidation = order.format()
-        if orderValidation is not None:
-            return self.fail( msg = orderValidation)
+        for ccxtMethod in ccxtExchangeNeededMethods:
+            if ccxtMethod not in self.exchange.has or not self.exchange.has[ccxtMethod]: #ccxt unified method check
+                if not hasattr(self.exchange, ccxtMethod): #ccxt implicit (not unified) method check
+                    self.fail( msg =  f'{ccxtMethod}() not available for this exchange' )
 
         self.assertTrue
 
     def test_CreateLimitLong(self):
-        self.assertTrue
+        side = 'buy'
+        type = 'Limit'
+        symbol = gv.ticker2symbol[self.ticker]
+        amount = 0.5
+        price = self.marketPrice['bid'] - 10
+        mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
+
+        order = Order(
+            exchange = self.exchange,
+            symbol = symbol,
+            side = side,
+            type = type,
+            leverage = self.leverage,
+            display_qty = self.display_qty,
+            stop_px = self.stop_px,
+            peg_offset_value = self.peg_offset_value,
+            peg_price_type = self.peg_price_type,
+            exec_inst = self.exec_inst,
+            expiracy = self.expiracy,
+            id = self.id,
+            amount = amount,
+            price = price
+        )
+
+        orderValidation = order.format(self.marketPrice)
+        if orderValidation is not None:
+            self.fail(msg = orderValidation)
+        
+        self.assertEqual(
+            first = order.data,
+            second = {'amount': mexAmount, 'leverage': self.leverage, 'params': {'displayQty': self.display_qty, 'execInst': self.exec_inst, 'pegOffsetValue': self.peg_offset_value, 'pegPriceType': self.peg_price_type, 'stopPx': self.stop_px}, 'price': price, 'side': side, 'symbol': symbol, 'type': type},
+            msg = 'invalid order to execute'
+        )
 
     def test_CreateLimitShort(self):
-        self.assertTrue
+        side = 'sell'
+        type = 'Limit'
+        symbol = gv.ticker2symbol[self.ticker]
+        amount = 0.5
+        price = self.marketPrice['ask'] + 10
+        mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
+
+        order = Order(
+            exchange = self.exchange,
+            symbol = symbol,
+            side = side,
+            type = type,
+            leverage = self.leverage,
+            display_qty = self.display_qty,
+            stop_px = self.stop_px,
+            peg_offset_value = self.peg_offset_value,
+            peg_price_type = self.peg_price_type,
+            exec_inst = self.exec_inst,
+            expiracy = self.expiracy,
+            id = self.id,
+            amount = amount,
+            price = price
+        )
+
+        orderValidation = order.format(self.marketPrice)
+        if orderValidation is not None:
+            self.fail(msg = orderValidation)
+        
+        self.assertEqual(
+            first = order.data,
+            second = {'amount': mexAmount, 'leverage': self.leverage, 'params': {'displayQty': self.display_qty, 'execInst': self.exec_inst, 'pegOffsetValue': self.peg_offset_value, 'pegPriceType': self.peg_price_type, 'stopPx': self.stop_px}, 'price': price, 'side': side, 'symbol': symbol, 'type': type},
+            msg = 'invalid order to execute'
+        )
+
+    def test_CreateMarketLong(self):
+        side = 'buy'
+        type = 'Market'
+        symbol = gv.ticker2symbol[self.ticker]
+        amount = 0.5
+        price = None
+        currentPrice = (self.marketPrice['bid'] + self.marketPrice['ask'])/2
+        mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = currentPrice)
+
+        order = Order(
+            exchange = self.exchange,
+            symbol = symbol,
+            side = side,
+            type = type,
+            leverage = self.leverage,
+            display_qty = self.display_qty,
+            stop_px = self.stop_px,
+            peg_offset_value = self.peg_offset_value,
+            peg_price_type = self.peg_price_type,
+            exec_inst = self.exec_inst,
+            expiracy = self.expiracy,
+            id = self.id,
+            amount = amount,
+            price = price
+        )
+
+        orderValidation = order.format(self.marketPrice)
+        if orderValidation is not None:
+            self.fail(msg = orderValidation)
+        
+        self.assertEqual(
+            first = order.data,
+            second = {'amount': mexAmount, 'leverage': self.leverage, 'params': {'displayQty': self.display_qty, 'execInst': self.exec_inst, 'pegOffsetValue': self.peg_offset_value, 'pegPriceType': self.peg_price_type, 'stopPx': self.stop_px}, 'price': price, 'side': side, 'symbol': symbol, 'type': type},
+            msg = 'invalid order to execute'
+        )
 
     def test_CreateMarketShort(self):
-        self.assertTrue
+        side = 'sell'
+        type = 'Market'
+        symbol = gv.ticker2symbol[self.ticker]
+        amount = 0.5
+        price = None
+        currentPrice = (self.marketPrice['bid'] + self.marketPrice['ask'])/2
+        mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = currentPrice)
 
-    def test_CreateMarketShort(self):
-        self.assertTrue
+        order = Order(
+            exchange = self.exchange,
+            symbol = symbol,
+            side = side,
+            type = type,
+            leverage = self.leverage,
+            display_qty = self.display_qty,
+            stop_px = self.stop_px,
+            peg_offset_value = self.peg_offset_value,
+            peg_price_type = self.peg_price_type,
+            exec_inst = self.exec_inst,
+            expiracy = self.expiracy,
+            id = self.id,
+            amount = amount,
+            price = price
+        )
+
+        orderValidation = order.format(self.marketPrice)
+        if orderValidation is not None:
+            self.fail(msg = orderValidation)
+        
+        self.assertEqual(
+            first = order.data,
+            second = {'amount': mexAmount, 'leverage': self.leverage, 'params': {'displayQty': self.display_qty, 'execInst': self.exec_inst, 'pegOffsetValue': self.peg_offset_value, 'pegPriceType': self.peg_price_type, 'stopPx': self.stop_px}, 'price': price, 'side': side, 'symbol': symbol, 'type': type},
+            msg = 'invalid order to execute'
+        )
 
     def test_CreateStopBuy(self):
         self.assertTrue
@@ -133,5 +257,13 @@ class Test_order(unittest.TestCase):
         self.assertTrue
 
 
+    def test_showData(self):
+        self.assertTrue
+
+
+    def test_execute(self):
+        self.assertTrue
+
+    
 if __name__ == '__main__':
     unittest.main()
