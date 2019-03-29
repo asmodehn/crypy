@@ -77,7 +77,7 @@ class Order():
                     self.data['params']['stopPx'] = price
                     del self.data['price']
 
-                    self.data['params']['exec_inst'] = 'IndexPrice'
+                    self.data['params']['execInst'] = 'IndexPrice'
                     
                     #Mex valid order type
                     if self.data['side'] is 'buy':
