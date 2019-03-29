@@ -144,7 +144,7 @@ class Order():
             del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
 
             #second post/update order
-            if 'id' not in self.data or self.data['id'] is None:
+            if 'id' not in self.data:
                 response = self.exchange.createOrder(**dict(self.data))
             else:
                 response = self.exchange.editOrder(**dict(self.data))
