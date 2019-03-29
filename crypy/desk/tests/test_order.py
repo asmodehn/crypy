@@ -346,13 +346,129 @@ class Test_order(unittest.TestCase):
         )
 
     def test_CreateStop(self):
-        self.assertTrue
+        side = 'buy' #TODO other side
+        type = 'Stop'
+        symbol = gv.ticker2symbol[self.ticker]
+        amount = None #TODO partial Stop w n amount
+        stop_px = self.marketPrice['ask'] + 100
+        exec_inst = 'IndexPrice' #',Close' #TODO full stop
+
+        #mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
+        returned_type = type
+        returned_amount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price) if amount is not None else None
+        returned_stopPx = stop_px
+        returned_exec_inst = exec_inst
+
+        order = Order(
+            exchange = self.exchange,
+            symbol = symbol,
+            side = side,
+            type = type,
+            leverage = self.leverage,
+            display_qty = self.display_qty,
+            stop_px = stop_px,
+            peg_offset_value = self.peg_offset_value,
+            peg_price_type = self.peg_price_type,
+            exec_inst = exec_inst,
+            expiracy = self.expiracy,
+            id = self.id,
+            amount = amount,
+            price = self.price
+        )
+
+        orderValidation = order.format(self.marketPrice)
+        if orderValidation is not None:
+            self.fail(msg = orderValidation)
+        
+        self.assertEqual(
+            first = order.data,
+            second = {'amount': returned_amount, 'leverage': self.leverage, 'params': {'displayQty': self.display_qty, 'execInst': returned_exec_inst, 'pegOffsetValue': self.peg_offset_value, 'pegPriceType': self.peg_price_type, 'stopPx': returned_stopPx}, 'price': None, 'side': side, 'symbol': symbol, 'type': returned_type},
+            msg = 'invalid order to execute'
+        )
 
     def test_CreateTakeProfit(self):
-        self.assertTrue
+        side = 'sell' #TODO other side
+        type = 'MarketIfTouched'
+        symbol = gv.ticker2symbol[self.ticker]
+        amount = None #TODO partial TP w an amount
+        stop_px = self.marketPrice['bid'] - 100
+        exec_inst = 'IndexPrice' #',Close' #TODO full stop
+
+        #mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
+        returned_type = type
+        returned_amount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price) if amount is not None else None
+        returned_stopPx = stop_px
+        returned_exec_inst = exec_inst
+
+        order = Order(
+            exchange = self.exchange,
+            symbol = symbol,
+            side = side,
+            type = type,
+            leverage = self.leverage,
+            display_qty = self.display_qty,
+            stop_px = stop_px,
+            peg_offset_value = self.peg_offset_value,
+            peg_price_type = self.peg_price_type,
+            exec_inst = exec_inst,
+            expiracy = self.expiracy,
+            id = self.id,
+            amount = amount,
+            price = self.price
+        )
+
+        orderValidation = order.format(self.marketPrice)
+        if orderValidation is not None:
+            self.fail(msg = orderValidation)
+        
+        self.assertEqual(
+            first = order.data,
+            second = {'amount': returned_amount, 'leverage': self.leverage, 'params': {'displayQty': self.display_qty, 'execInst': returned_exec_inst, 'pegOffsetValue': self.peg_offset_value, 'pegPriceType': self.peg_price_type, 'stopPx': returned_stopPx}, 'price': None, 'side': side, 'symbol': symbol, 'type': returned_type},
+            msg = 'invalid order to execute'
+        )
 
     def test_CreateTrailingStop(self):
-        self.assertTrue
+        side = 'buy' #TODO other side
+        type = 'Pegged'
+        peg_price_type = 'TrailingStopPeg'
+        symbol = gv.ticker2symbol[self.ticker]
+        amount = None #TODO partial Stop w n amount
+        peg_offset_value = 100
+        exec_inst = 'IndexPrice' #',Close' #TODO full stop
+
+        #mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
+        returned_type = 'Stop'
+        returned_amount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price) if amount is not None else None
+        returned_peg_price_type = peg_price_type
+        returned_peg_offset_value = peg_offset_value
+        returned_exec_inst = exec_inst
+
+        order = Order(
+            exchange = self.exchange,
+            symbol = symbol,
+            side = side,
+            type = type,
+            leverage = self.leverage,
+            display_qty = self.display_qty,
+            stop_px = self.stop_px,
+            peg_offset_value = peg_offset_value,
+            peg_price_type = peg_price_type,
+            exec_inst = exec_inst,
+            expiracy = self.expiracy,
+            id = self.id,
+            amount = amount,
+            price = self.price
+        )
+
+        orderValidation = order.format(self.marketPrice)
+        if orderValidation is not None:
+            self.fail(msg = orderValidation)
+        
+        self.assertEqual(
+            first = order.data,
+            second = {'amount': returned_amount, 'leverage': self.leverage, 'params': {'displayQty': self.display_qty, 'execInst': returned_exec_inst, 'pegOffsetValue': returned_peg_offset_value, 'pegPriceType': returned_peg_price_type, 'stopPx': self.stop_px}, 'price': None, 'side': side, 'symbol': symbol, 'type': returned_type},
+            msg = 'invalid order to execute'
+        )
 
 
     def test_UpdateLimitLong(self):
