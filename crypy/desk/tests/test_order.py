@@ -506,22 +506,22 @@ class Test_order(unittest.TestCase):
 
 
     def test_Cancel(self):
+        #Nothing specific to test atm except execution
         self.assertTrue
 
 
     def test_CancelAll(self):
+        #Method not done yet
         self.assertTrue
 
 
     def test_fetchL2OrderBook(self):
-        self.assertTrue
-
-
-    def test_showData(self):
+        #Nothing specific to test atm except execution
         self.assertTrue
 
 
     def test_execute(self):
+        #Nothing specific to test atm except execution
         self.assertTrue
 
     
