@@ -42,7 +42,7 @@ class Order():
              }
         }
 
-    def format(self):
+    def format(self, marketPrice):
         #TODO error handling
 
         ### ID handling ###
@@ -67,7 +67,6 @@ class Order():
                 return f'privatePostPositionLeverage() not available for this exchange'
 
             if self.data['type'] == 'Market': #market order
-                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
 
                 if self.data['price'] is None: #market order -> 'real' Market order
                     price = (marketPrice['bid'] + marketPrice['ask'])/2
@@ -110,7 +109,6 @@ class Order():
             self.data['type'] =  'Stop'
 
             if not self.data['amount'] is None:  #don't care if we don't have an amount but if we do we need to transform it into bitmex contracts
-                marketPrice = desk.do_fetchMarketPrice(symbol = self.data['symbol'])
                 price = (marketPrice['bid'] + marketPrice['ask'])/2 + self.data['params']['pegOffsetValue'] #add offset to market price
         ### end TYPE handling ###
 

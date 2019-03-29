@@ -187,9 +187,13 @@ def make_order(ticker, order_type, expiracy, id = None, amount = None, price = N
 
     def partial(side):
         #nonlocal ticker, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price
-        order = Order(exchange = click.get_current_context().obj.exchange, symbol=gv.ticker2symbol[ticker], side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
+
+        desk = click.get_current_context().obj
+        symbol = gv.ticker2symbol[ticker]
+
+        order = Order(exchange = desk.exchange, symbol=symbol, side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
         
-        orderValidation = order.format()
+        orderValidation = order.format(marketPrice = desk.do_fetchMarketPrice(symbol = symbol))
         if orderValidation is not None:
             return orderValidation
         
