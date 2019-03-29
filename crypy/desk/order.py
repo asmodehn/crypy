@@ -81,14 +81,14 @@ class Order():
                     
                     #Mex valid order type
                     if self.data['side'] is 'buy':
-                        if price >= marketPrice['bid']: #stop-buy
+                        if price >= marketPrice['ask']: #stop-buy
                             self.data['type'] =  'Stop'
-                        elif price <= marketPrice['ask']: #tp-buy
+                        elif price <= marketPrice['bid']: #tp-buy
                             self.data['type'] =  'MarketIfTouched'
-                    if self.data['side'] is 'sell':
-                        if price >= marketPrice['bid']: #tp-sell
+                    elif self.data['side'] is 'sell':
+                        if price >= marketPrice['ask']: #tp-sell
                             self.data['type'] =  'MarketIfTouched'
-                        elif price <= marketPrice['ask']: #stop-sell
+                        elif price <= marketPrice['bid']: #stop-sell
                             self.data['type'] =  'Stop'
 
 
