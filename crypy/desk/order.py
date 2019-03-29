@@ -115,9 +115,14 @@ class Order():
         ### AMOUNT handling ###
         #Mex Specifik: nb of contracts to order (int) == order amount * order price
         if self.data['amount'] is not None:
-            self.data['amount'] = int(self.data['amount'] * price)
-            self.data['amount'] = (1 if self.data['amount'] == 0 else self.data['amount']) #always at least 1 contract for the order and handle negative values
+            self.data['amount'] = self._mexContractAmount(currencyAmount = self.data['amount'], currencyPrice = price)
         ### end AMOUNT handling ###
+    
+    @staticmethod
+    def _mexContractAmount(currencyAmount, currencyPrice):
+        contractAmount = int(currencyAmount * currencyPrice) #rounded
+        contractAmount = (1 if contractAmount == 0 else contractAmount) #always at least 1 contract for the order and handle negative values
+        return contractAmount
 
     def showData(self): 
         for key, value in self.data.items():
