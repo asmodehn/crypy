@@ -60,45 +60,47 @@ def resolve(filename: str) -> Path:
 
 
 @dataclass(frozen=True)
-class UserKey:
-    """
-    Properly parsed config, ready to use for connecting to a remote exchange as an authenticated user.
-    Immutable.
-    """
-
-    apiKey: str = field(default="", repr=False)
-    secret: str = field(default="", repr=False)
-
-
-@dataclass(frozen=True)
 class ExchangeSection:
     """
     Properly parsed config, ready to use for setting up a remote exchange.
     A Section is immutable.
     """
 
-    # Properly parsed config for an exchange
-    credentials: Path  # value computed in config, based on section name
+    credentials_file: Path  # value computed in config, based on section name
+    credentials_parser: configparser.ConfigParser = field(
+        init=False,
+        default=configparser.ConfigParser(
+            interpolation=configparser.ExtendedInterpolation()
+        ),
+        repr=False,
+    )
+
     timeout: int = 30000
     enableRateLimit: bool = True
     verbose: bool = True
     impl: str = "ccxt"
 
-    def authenticate(self):
-        resolve()
+    @property
+    def apiKey(self):
+        if 'apiKey' not in self.credentials_parser.defaults():
 
-    def public(self):
-        """convenience method to strip out sensitive information"""
-        return ExchangeSection(
-            timeout=self.timeout,
-            enableRateLimit=self.enableRateLimit,
-            verbose=self.verbose,
-            impl=self.impl,
-        )
+            self.credentials_parser.optionxform = str  # to prevent lowering keys
+            # Loading file
+            resolved_cf = resolve(str(self.credentials_file))
+            self.credentials_parser.read(str(resolved_cf))
+        else:
+            return self.credentials_parser['apiKey']
 
-    def asdict(self):
-        """NB: DOESN'T strip out sensitive information"""
-        return asdict(self)
+    @property
+    def secret(self):
+        if 'secret' not in self.credentials_parser.defaults():
+
+            self.credentials_parser.optionxform = str  # to prevent lowering keys
+            # Loading file
+            resolved_cf = resolve(str(self.credentials_file))
+            self.credentials_parser.read(str(resolved_cf))
+        else:
+            return self.credentials_parser['secret']
 
 
 @dataclass(frozen=True)
@@ -155,8 +157,8 @@ class Config:
             # Assigning default credential filename if not present.
             # note if settings.ini file is setup with full absolute path, then keyfiles are supposed to be in the same location
             # Otherwise, if settings.ini location is relative, and resolved at runtime, the keyfile location also is, and could be in found in a different location.
-            if "credentials" not in sec_kwargs:
-                sec_kwargs["credentials"] = Path(
+            if "credentials_file" not in sec_kwargs:
+                sec_kwargs["credentials_file"] = Path(
                     self.filepath.parent, ".".join(section.split(".")[:-1] + ["key"])
                 )
 
@@ -179,7 +181,7 @@ if __name__ == "__main__":
 
     for n, s in c.sections.items():
         print(f"{n} : {s}")
-        cf = resolve(str(s.credentials))
+        cf = resolve(str(s.credentials_file))
         if cf:
             print(f"Credentials found at {cf}")
         else:
