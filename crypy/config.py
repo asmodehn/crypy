@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 import logging
 import os
 
@@ -24,7 +25,7 @@ sample_config_file = """
 """
 
 
-default_filename = 'crypy.ini'
+default_filename = "settings.ini"
 
 
 def resolve(filename: str) -> Path:
@@ -32,26 +33,41 @@ def resolve(filename: str) -> Path:
         os.curdir,
         os.path.join(os.path.dirname(__file__), os.path.pardir),
         # having crypy.ini in root of source repo (not for production)
-        os.path.expanduser("~"),
+        os.path.expanduser("~/.config/crypy"),
         "/etc/crypy",
-        os.environ.get("CRYPY_CONF")
+        os.environ.get("CRYPY_CONF"),
     ]
 
     config_file = None
-    # We loop on turthy value only (no empty string, no none, etc.)
+    # We loop on truthy value only (no empty string, no none, etc.)
     for loc in (p for p in pathlist if p):
         locfile = Path(loc).joinpath(filename)
         if locfile.exists():
             config_file = locfile
             break
 
-    if config_file is None:  # If not present, generate sample file, locally to make it obvious.
+    if (
+        config_file is None
+    ):  # If not present, generate sample file, locally to make it obvious.
         config_file = Path(os.curdir).joinpath(filename)
-        logging.warning("config file not found. {config_file} has been generated for you.")
+        logging.warning(
+            "config file not found. {config_file} has been generated for you."
+        )
         config_file.write_text(sample_config_file)
 
     config_file.resolve()
     return config_file
+
+
+@dataclass(frozen=True)
+class UserKey:
+    """
+    Properly parsed config, ready to use for connecting to a remote exchange as an authenticated user.
+    Immutable.
+    """
+
+    apiKey: str = field(default="", repr=False)
+    secret: str = field(default="", repr=False)
 
 
 @dataclass(frozen=True)
@@ -62,17 +78,23 @@ class ExchangeSection:
     """
 
     # Properly parsed config for an exchange
-    apiKey: str = field(default="", repr=False)
-    secret: str = field(default="", repr=False)
+    credentials: Path  # value computed in config, based on section name
     timeout: int = 30000
     enableRateLimit: bool = True
     verbose: bool = True
-    impl: str = 'ccxt'
+    impl: str = "ccxt"
+
+    def authenticate(self):
+        resolve()
 
     def public(self):
         """convenience method to strip out sensitive information"""
-        return ExchangeSection(timeout=self.timeout, enableRateLimit=self.enableRateLimit, verbose=self.verbose,
-                               impl=self.impl)
+        return ExchangeSection(
+            timeout=self.timeout,
+            enableRateLimit=self.enableRateLimit,
+            verbose=self.verbose,
+            impl=self.impl,
+        )
 
     def asdict(self):
         """NB: DOESN'T strip out sensitive information"""
@@ -86,19 +108,24 @@ class Config:
     Also holds the various sections already parsed.
     Config is immutable.
     """
-    filepath: typing.Optional[Path] = field(init=True,
-                                            default=resolve(default_filename),
-                                            repr=True)
 
-    parser: configparser.ConfigParser = field(init=False,
-                                              default=configparser.ConfigParser(
-                                                  interpolation=configparser.ExtendedInterpolation()
-                                              ),
-                                              repr=False)
+    filepath: typing.Optional[Path] = field(
+        init=True, default=resolve(default_filename), repr=True
+    )
+
+    parser: configparser.ConfigParser = field(
+        init=False,
+        default=configparser.ConfigParser(
+            interpolation=configparser.ExtendedInterpolation()
+        ),
+        repr=False,
+    )
 
     defaults: typing.Dict = field(default_factory=dict, init=False)
 
-    sections: typing.Dict[str, ExchangeSection] = field(default_factory=list, init=False)
+    sections: typing.Dict[str, ExchangeSection] = field(
+        default_factory=list, init=False
+    )
 
     def __post_init__(self):
         self.parser.optionxform = str  # to prevent lowering keys
@@ -125,21 +152,35 @@ class Config:
                 except configparser.NoOptionError:
                     pass  # we will use hte dataclass default instead
 
+            # Assigning default credential filename if not present.
+            # note if settings.ini file is setup with full absolute path, then keyfiles are supposed to be in the same location
+            # Otherwise, if settings.ini location is relative, and resolved at runtime, the keyfile location also is, and could be in found in a different location.
+            if "credentials" not in sec_kwargs:
+                sec_kwargs["credentials"] = Path(
+                    self.filepath.parent, ".".join(section.split(".")[:-1] + ["key"])
+                )
+
             # Note: sections members not in dataclass are ignored
             return sec_kwargs
 
-        object.__setattr__(self, "sections", {
-            s: ExchangeSection(**section_parse(s)) for s in self.parser.sections()
-        })
+        # Looping on all sections
+        object.__setattr__(
+            self,
+            "sections",
+            {s: ExchangeSection(**section_parse(s)) for s in self.parser.sections()},
+        )
 
 
-if __name__ == '__main__':
-
-    c = Config()
+if __name__ == "__main__":
+    cff = resolve(default_filename)
+    print(f"Config file found at {cff.absolute()}")
+    c = Config(filepath=cff)
     print(c)
 
     for n, s in c.sections.items():
         print(f"{n} : {s}")
-
-
-
+        cf = resolve(str(s.credentials))
+        if cf:
+            print(f"Credentials found at {cf}")
+        else:
+            raise FileNotFoundError(f"Credential file not found : {cf}")
