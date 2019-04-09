@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# coding: utf-8
+import dataclasses
+import typing
 
 import inspect #useful to debug w inspect.signature for example
 
@@ -24,7 +26,7 @@ class Desk(object):
         self.config = conf if conf is not None else config.Config()
         self.exchangeName = (exchange or gv.defEXCHANGE)
         exgData = gv.exchange_data[self.exchangeName] #TODO check existance
-        self.exchange = getattr(ccxt, exgData['ccxtName'])(self.config.sections[exgData['confSection']].asdict()) #TODO check exchange id existing in CCXT
+        self.exchange = getattr(ccxt, exgData['ccxtName'])(dataclasses.asdict(self.config.sections[exgData['confSection']])) #TODO check exchange id existing in CCXT
         if 'test' in exgData and exgData['test']:
             self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
         
