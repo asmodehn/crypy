@@ -12,7 +12,10 @@ try:
 except (ImportError, ValueError, ModuleNotFoundError):
     import crypy.desk.global_vars as gv
 
-from .utils import Utils
+from .utils import formatTS
+
+#from .symbol import Symbol, SymbolError
+#from .market import Market, MarketError
 
 try:
     from ..euc import ccxt
@@ -26,7 +29,13 @@ class Desk(object):
         self.config = conf if conf is not None else config.Config()
         self.exchangeName = (exchange or gv.defEXCHANGE)
         exgData = gv.exchange_data[self.exchangeName] #TODO check existance
-        self.exchange = getattr(ccxt, exgData['ccxtName'])(dataclasses.asdict(self.config.sections[exgData['confSection']])) #TODO check exchange id existing in CCXT
+        exgConfig = dataclasses.asdict(self.config.sections[exgData['confSection']])
+        # Requesting Key from initialization
+        exgConfig.update({
+            'apiKey': self.config.sections[exgData['confSection']].apiKey,
+            'secret': self.config.sections[exgData['confSection']].secret,
+        })
+        self.exchange = getattr(ccxt, exgData['ccxtName'])(exgConfig) #TODO check exchange id existing in CCXT
         if 'test' in exgData and exgData['test']:
             self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
         
@@ -88,12 +97,6 @@ class Desk(object):
         except TypeError as error:
             return f"invalid argument(s) when calling {ccxtMethod}(). Internal error: {error.args[0]}"
 
-    def _ccxtPrivateMethod(self, ccxtMethod, **kwargs):
-        # Doing authentication only when needed
-        self.exchange.apiKey = self.config.sections[self.exchangeName].apiKey
-        self.exchange.secret = self.config.sections[self.exchangeName].secret
-        return self._ccxtMethod(ccxtMethod, **kwargs)
-
     def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
         #Get data
         tohlcv = self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
@@ -106,7 +109,7 @@ class Desk(object):
         for period in tohlcv:
             # Initialize an OrderedDict to garantee the column order
             tohlcvdict = dict()
-            tohlcvdict["CloseTime"] = Utils.formatTS(period[0])
+            tohlcvdict["CloseTime"] = formatTS(period[0])
             tohlcvdict["Open"] = period[1]
             tohlcvdict["High"] = period[2]
             tohlcvdict["Low"] = period[3]
@@ -122,7 +125,7 @@ class Desk(object):
         return tohlcvlist
 
     def do_fetchBalance(self, customParams):
-        return self._ccxtPrivateMethod('fetchBalance', params = customParams)
+        return self._ccxtMethod('fetchBalance', params = customParams)
     def do_fetchTotalBalance(self, customParams):
         return self._ccxtMethod('fetchTotalBalance', params = customParams)
     def do_fetchFreeBalance(self, customParams):
