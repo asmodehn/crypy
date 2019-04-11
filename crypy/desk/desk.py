@@ -13,7 +13,7 @@ try:
     import global_vars as gv
 except (ImportError, ValueError, ModuleNotFoundError):
     import crypy.desk.global_vars as gv
-    from crypy.desk import capital    
+    from crypy.desk import capital
 
 from .utils import formatTS
 
