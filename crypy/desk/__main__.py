@@ -177,7 +177,7 @@ def make_order(ticker, order_type, expiracy, id = None, amount = None, price = N
     def partial(side):
         #nonlocal ticker, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price
 
-        desk = click.get_current_context().obj
+        global desk
         symbol = gv.ticker2symbol[ticker]
 
         order = Order(exchange = desk.exchange, symbol=symbol, side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
@@ -296,7 +296,7 @@ def cancel_order(ctx, ids):
     """
     Pair: cancel order(s)
     """
-    Order.cancel(order_ids=ids)
+    Order.cancel(exchange=desk.exchange, order_ids=ids)
 
 #TODO cancel all orders
 
