@@ -1,7 +1,6 @@
 import unittest
 #https://docs.python.org/3/library/unittest.mock.html
 # https://docs.pytest.org/en/latest/unittest.html
-from parameterized import parameterized
 
 import crypy.desk.global_vars as gv #TODO Validate it first
 from crypy.desk.desk import Desk #TODO Validate it first
