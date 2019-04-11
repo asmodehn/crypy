@@ -17,6 +17,7 @@ import datetime
 import crypy.desk.global_vars as gv
 from crypy.desk.desk import Desk
 from crypy.desk.order import Order
+from crypy.desk import repl
 
 """Entrypoint for the desk subpackage
 Manages one (currently) exchange, via CLI
@@ -24,52 +25,40 @@ Manages one (currently) exchange, via CLI
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--h', '--help', '?'])
 
+desk = None
+
+
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('-e', '--exchange', default=gv.defEXCHANGE, type=click.Choice(dict(gv.exchange_data).keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
+
+    global desk
+    if desk is None:
+        desk = Desk(exchange=exchange)
+
     # starting repl if no command passed
     if ctx.invoked_subcommand is None:
-        prompt_toolkit.shortcuts.clear()
-        click.echo(f"-== TRADING CLI ==-")
-        click.echo(f"EXCHANGE: {exchange}")
-        #ctx.invoke(help) #TODO invoke help cmd on startup
-        ctx.exchangeName = exchange #will be available from ctx.parent.exchangeName after repl launched
 
-        #Setup the prompt
-        #https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
-        prompt_kwargs = {
-            'message': f"{exchange}> ",
-            'history': prompt_toolkit.history.FileHistory(os.path.join(sys.path[0], 'crypy.hist')), #TODO don't use os.path
-            'auto_suggest': prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),
-            'wrap_lines': True,
-            'bottom_toolbar': [
-                #('class:bottom-toolbar-logo', ' Ϟ ') #TODO setup
-            ]
-        }
-
-        # launching repl
-        crepl(ctx, prompt_kwargs=prompt_kwargs, allow_system_commands = False)
-        
+        ctx.exchangeName = exchange  # will be available from ctx.parent.exchangeName after repl launched
+        crepl = repl.start_repl(ctx, exchange)
 
     # otherwise invoke the specified subcommand (default behavior)
-    else:
-        ctx.obj = Desk(exchange=ctx.parent.exchangeName)
 
 @cli.command()
 @click.pass_obj
-def exchange_info(ctx):
+def exchange_info(obj):
     """print exchange info to file exg_%EXCHANGE_NAME%.txt"""
-    print(ctx.do_getExchangeInfo())
+    print(desk.do_getExchangeInfo())
 
 @cli.command()
 @click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
 #TODO limit argument
 @click.pass_obj
-def list(ctx, what):
+def list(obj, what):
     """display all followed pairs informations"""
-    print( ctx.do_list(what = what, customParams = {}) )  #todo customparams for exchange if needed
+    print( desk.do_list(what = what, customParams = {}) )  #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -85,7 +74,7 @@ def balance(ctx):
     """
     Get user balance (private data)
     """
-    print( ctx.obj.do_fetchBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -93,7 +82,7 @@ def balance_total(ctx):
     """
     Get user total balance (private data)
     """
-    print( ctx.obj.do_fetchTotalBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchTotalBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -101,7 +90,7 @@ def balance_free(ctx):
     """
     Get user free balance (private data)
     """
-    print( ctx.obj.do_fetchFreeBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print(desk.do_fetchFreeBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -109,7 +98,7 @@ def balance_used(ctx):
     """
     Get user used balance (private data)
     """
-    print( ctx.obj.do_fetchUsedBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchUsedBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -117,7 +106,7 @@ def balance_partial(ctx):
     """
     Get user partial? balance (private data)
     """
-    print( ctx.obj.do_fetchPartialBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchPartialBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 
 @cli.command()
@@ -131,7 +120,7 @@ def ledger(ctx, assets, type, since, limit):
     Get user asset ledger (private data)
     """
     #todo use assets and type params (possible w ccxt ? maybe through "code" arg ?)
-    print( ctx.obj.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
+    print( desk.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
 
 
 #@cli.command()
@@ -265,7 +254,7 @@ def stop(ctx, side, full, expiracy, id, amount, price):
 @order_options_stops
 @click.argument('offset-price', nargs=1, type=float, required=True)
 @click.pass_context
-def trailing_stop(ctx, side, expiracy, id, amount, offset_price):
+def trailing_stop(ctx, side, full, expiracy, id, amount, offset_price):
     """
     Pair: Set/Update a trailing stop for a position (WARNING: ATM be careful if no position and with the --side option which might trigger a Market order (TODO abstract this))
     """
