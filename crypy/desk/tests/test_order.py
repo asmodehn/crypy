@@ -1,26 +1,14 @@
 import unittest
 #https://docs.python.org/3/library/unittest.mock.html
-import pytest
 # https://docs.pytest.org/en/latest/unittest.html
+from parameterized import parameterized
 
 import crypy.desk.global_vars as gv #TODO Validate it first
 from crypy.desk.desk import Desk #TODO Validate it first
 from crypy.desk.order import Order
 
 
-def pytest_generate_tests(metafunc):
-    # called once per each test function
-    try:
-        funcarglist = metafunc.cls.params[metafunc.function.__name__]
-    except KeyError:
-        return
-
-    argnames = sorted(funcarglist[0])
-    metafunc.parametrize(argnames, [[funcargs[name] for name in argnames]
-            for funcargs in funcarglist])
-
-
-class TestOrder:
+class TestOrder(unittest.TestCase):
     exchangeName = "testnet.bitmex" #TODO temp in the ne d will need to very all exchanges
     ticker = 'BTCUSD' #TODO temp in the ne d will need to very all traded pair for the exchange
 
@@ -44,22 +32,6 @@ class TestOrder:
     exec_inst = None
     expiracy = None
 
-    # Ref : https://docs.pytest.org/en/latest/example/parametrize.html#parametrizing-test-methods-through-per-class-configuration
-    # a map specifying multiple argument sets for a test method
-    params = {
-        'test_LimitLong': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_LimitShort': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_MarketLong': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_MarketShort': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_StopBuy': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_StopSell': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_TakeProfitBuy': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_TakeProfitSell': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_Stop': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_TakeProfit': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-        'test_TrailingStop': [{'id': None}, {'id': '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98'}],
-    }
-
     def test_Exchange(self):
         ccxtExchangeNeededMethods = [
             'createMarketOrder',
@@ -76,6 +48,10 @@ class TestOrder:
                 if not hasattr(self.exchange, ccxtMethod): #ccxt implicit (not unified) method check
                     pytest.fail( msg =  f'{ccxtMethod}() not available for this exchange' )
 
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_LimitLong(self, id):
         side = 'buy'
         type = 'Limit'
@@ -119,6 +95,10 @@ class TestOrder:
             'type': type
         }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
 
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_LimitShort(self, id):
         side = 'sell'
         type = 'Limit'
@@ -163,7 +143,10 @@ class TestOrder:
             'type': type
         }, **({} if id is None else {'id': id})}, 'invalid order to execute'
 
-
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_MarketLong(self, id):
         side = 'buy'
         type = 'Market'
@@ -208,6 +191,10 @@ class TestOrder:
             'type': type
         }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
 
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_MarketShort(self, id):
         side = 'sell'
         type = 'Market'
@@ -251,6 +238,10 @@ class TestOrder:
             'symbol': symbol,
             'type': type}, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
 
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_StopBuy(self, id):
         side = 'buy'
         type = 'Market'
@@ -297,6 +288,10 @@ class TestOrder:
             'symbol': symbol,
             'type': returnedType}, **({} if id is None else {'id' : id})}, 'invalid order to execute'
 
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_StopSell(self, id):
         side = 'sell'
         type = 'Market'
@@ -344,7 +339,10 @@ class TestOrder:
             'type': returnedType
         }, **({} if id is None else {'id' : id})}, 'invalid order to execute'
 
-
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_TakeProfitBuy(self, id):
         side = 'buy'
         type = 'Market'
@@ -391,6 +389,10 @@ class TestOrder:
             'symbol': symbol,
             'type': returnedType}, **({} if id is None else {'id' : id})}, 'invalid order to execute'
 
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_TakeProfitSell(self, id):
         side = 'sell'
         type = 'Market'
@@ -438,7 +440,10 @@ class TestOrder:
             'type': returnedType
         }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
 
-
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_Stop(self, id):
         side = 'buy' #TODO other side
         type = 'Stop'
@@ -489,6 +494,10 @@ class TestOrder:
             'type': returned_type
         }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
 
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_TakeProfit(self, id):
         side = 'sell' #TODO other side
         type = 'MarketIfTouched'
@@ -539,6 +548,10 @@ class TestOrder:
             'type': returned_type
         }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
 
+    @parameterized.expand([
+        (None,),
+        ('686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98',)
+    ])
     def test_TrailingStop(self, id):
         side = 'buy' #TODO other side
         type = 'Pegged'
@@ -592,24 +605,24 @@ class TestOrder:
         }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
 
 
-    @pytest.mark.skip(reason="Not implemented")
+    @unittest.skip(reason="Not implemented")
     def test_Cancel(self):
         #Nothing specific to test atm except execution
         pass
 
 
-    @pytest.mark.skip(reason="Not implemented")
+    @unittest.skip(reason="Not implemented")
     def test_CancelAll(self):
         #Method not done yet
         pass
 
 
-    @pytest.mark.skip(reason="Not implemented")
+    @unittest.skip(reason="Not implemented")
     def test_fetchL2OrderBook(self):
         #Nothing specific to test atm except execution
         pass
 
-    @pytest.mark.skip(reason="Not implemented")
+    @unittest.skip(reason="Not implemented")
     def test_execute(self):
         #Nothing specific to test atm except execution
         #order.execute()
@@ -617,4 +630,5 @@ class TestOrder:
 
     
 if __name__ == '__main__':
+    import pytest
     pytest.main(['-s', __file__])
