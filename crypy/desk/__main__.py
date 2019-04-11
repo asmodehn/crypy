@@ -358,9 +358,6 @@ def list(ctx, what):
     """Pair: (user) information"""
     print( ctx.obj.do_list(what = what, symbol = gv.ticker2symbol[ctx.obj.ticker], customParams = {}) )  #todo customparams for exchange if needed
 
+
 if __name__ == '__main__':
-    try:
-        cli()
-    except:
-         pass
-    
+    cli()

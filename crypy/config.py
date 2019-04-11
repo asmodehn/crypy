@@ -80,27 +80,36 @@ class ExchangeSection:
     verbose: bool = True
     impl: str = "ccxt"
 
+    def parse_creds(self, credentials_file):
+        self.credentials_parser.optionxform = str  # to prevent lowering keys
+        # Loading file
+        resolved_cf = resolve(str(credentials_file))
+
+        with open(resolved_cf, 'r') as f:
+            config_string = f.read()
+            try:
+                self.credentials_parser.read_string(config_string)
+            except (configparser.MissingSectionHeaderError, ):
+                config_string = '[credentials]\n' + config_string
+                with open(resolved_cf, 'w') as fw:
+                    fw.write(config_string)
+                self.credentials_parser.read_string(config_string)
+
     @property
     def apiKey(self):
         if 'apiKey' not in self.credentials_parser.defaults():
 
-            self.credentials_parser.optionxform = str  # to prevent lowering keys
-            # Loading file
-            resolved_cf = resolve(str(self.credentials_file))
-            self.credentials_parser.read(str(resolved_cf))
-        else:
-            return self.credentials_parser['apiKey']
+            self.parse_creds(self.credentials_file)
+
+        return self.credentials_parser['credentials']['apiKey']
 
     @property
     def secret(self):
         if 'secret' not in self.credentials_parser.defaults():
 
-            self.credentials_parser.optionxform = str  # to prevent lowering keys
-            # Loading file
-            resolved_cf = resolve(str(self.credentials_file))
-            self.credentials_parser.read(str(resolved_cf))
-        else:
-            return self.credentials_parser['secret']
+            self.parse_creds(self.credentials_file)
+
+        return self.credentials_parser['credentials']['secret']
 
 
 @dataclass(frozen=True)
@@ -152,14 +161,15 @@ class Config:
                     elif v is str:
                         sec_kwargs[k] = self.parser.get(section, k)
                 except configparser.NoOptionError:
-                    pass  # we will use hte dataclass default instead
+                    pass  # we will use the dataclass default instead
 
             # Assigning default credential filename if not present.
             # note if settings.ini file is setup with full absolute path, then keyfiles are supposed to be in the same location
             # Otherwise, if settings.ini location is relative, and resolved at runtime, the keyfile location also is, and could be in found in a different location.
             if "credentials_file" not in sec_kwargs:
                 sec_kwargs["credentials_file"] = Path(
-                    self.filepath.parent, ".".join(section.split(".")[:-1] + ["key"])
+                    #self.filepath.parent,
+                    section + ".key"
                 )
 
             # Note: sections members not in dataclass are ignored

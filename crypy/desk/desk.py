@@ -88,6 +88,12 @@ class Desk(object):
         except TypeError as error:
             return f"invalid argument(s) when calling {ccxtMethod}(). Internal error: {error.args[0]}"
 
+    def _ccxtPrivateMethod(self, ccxtMethod, **kwargs):
+        # Doing authentication only when needed
+        self.exchange.apiKey = self.config.sections[self.exchangeName].apiKey
+        self.exchange.secret = self.config.sections[self.exchangeName].secret
+        return self._ccxtMethod(ccxtMethod, **kwargs)
+
     def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
         #Get data
         tohlcv = self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
@@ -116,7 +122,7 @@ class Desk(object):
         return tohlcvlist
 
     def do_fetchBalance(self, customParams):
-        return self._ccxtMethod('fetchBalance', params = customParams)
+        return self._ccxtPrivateMethod('fetchBalance', params = customParams)
     def do_fetchTotalBalance(self, customParams):
         return self._ccxtMethod('fetchTotalBalance', params = customParams)
     def do_fetchFreeBalance(self, customParams):

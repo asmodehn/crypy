@@ -4,9 +4,9 @@
 defEXCHANGE = "testnet.bitmex"
 defPAIR = "BTCUSD"
 exchange_data = {
-    "kraken": { 'confSection': "kraken.com", 'ccxtName': "kraken"},
-    "bitmex": { 'confSection': "bitmex.com", 'ccxtName': "bitmex"},
-    "testnet.bitmex": { 'confSection': "testnet.bitmex.com", 'ccxtName': "bitmex", 'test': True }
+    "kraken": { 'confSection': "kraken", 'ccxtName': "kraken"},
+    "bitmex": { 'confSection': "bitmex", 'ccxtName': "bitmex"},
+    "testnet.bitmex": { 'confSection': "testnet.bitmex", 'ccxtName': "bitmex", 'test': True }
 }
 ticker2symbol = {
     'ETHUSD': 'ETH/USD',
