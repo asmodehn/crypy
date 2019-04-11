@@ -360,4 +360,7 @@ def list(ctx, what):
 
 
 if __name__ == '__main__':
-    cli()
+    #try:
+        cli()
+    #except:
+    #     pass
