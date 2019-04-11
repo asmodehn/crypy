@@ -7,12 +7,13 @@ import inspect #useful to debug w inspect.signature for example
 
 import json
 
-from desk import capital
 
 try:
+    from desk import capital
     import global_vars as gv
 except (ImportError, ValueError, ModuleNotFoundError):
     import crypy.desk.global_vars as gv
+    from crypy.desk import capital    
 
 from .utils import formatTS
 
