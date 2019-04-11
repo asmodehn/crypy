@@ -53,7 +53,7 @@ def exchange_info(obj):
     print(desk.do_getExchangeInfo())
 
 @cli.command()
-@click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
+@click.argument('what', type=click.Choice(['data', 'orders-all', 'orders-open', 'orders-closed', 'positions', 'trades']), default='data')
 #TODO limit argument
 @click.pass_obj
 def list(obj, what):
@@ -211,10 +211,6 @@ def short(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     """
     side = "sell" #ccxt value
     print(make_order(ticker = desk.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
-    
-    ##TEMP DEBUG
-    #ctx.invoke(list, what='orders')
-
 
 @pair.command()
 @order_options_all
@@ -226,9 +222,6 @@ def long(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     """
     side = "buy" #ccxt value
     print(make_order(ticker = desk.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
-
-    ##TEMP DEBUG
-    #ctx.invoke(list, what='orders')
 
 @pair.command()
 @order_options_all
@@ -245,9 +238,6 @@ def stop(ctx, side, full, expiracy, id, amount, price):
         amount = None
     order_type = 'Stop'
     print(make_order(ticker = desk.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
-
-    ##TEMP DEBUG
-    #ctx.invoke(list, what='orders')
 
 @pair.command()
 @order_options_all
@@ -340,7 +330,7 @@ def market_price(ctx):
     print( 'market price: ' + str(desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[desk.ticker])) )
     
 @pair.command()
-@click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
+@click.argument('what', type=click.Choice(['data', 'orders-all', 'orders-open', 'orders-closed', 'positions', 'trades']), default='data')
 #TODO limit argument
 @click.pass_context
 def list(ctx, what):

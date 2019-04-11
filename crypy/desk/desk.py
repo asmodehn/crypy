@@ -63,8 +63,16 @@ class Desk(object):
                 'cmd' :'fetchData', #TODO: exchange.fetchData doesn't exists so make it
                 'kwargs': { 'symbol' : symbol, 'params' : customParams }
             },
-            'orders': {
+            'orders-all': {
+                'cmd' : 'fetchOrders', #working
+                'kwargs': { 'symbol' : symbol, 'params' : customParams }
+            },
+            'orders-open': {
                 'cmd' : 'fetchOpenOrders', #working
+                'kwargs': { 'symbol' : symbol, 'params' : customParams }
+            },
+            'orders-closed': {
+                'cmd' : 'fetchClosedOrders', #working
                 'kwargs': { 'symbol' : symbol, 'params' : customParams }
             },
             'positions': {
