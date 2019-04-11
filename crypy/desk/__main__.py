@@ -17,6 +17,7 @@ import datetime
 import crypy.desk.global_vars as gv
 from crypy.desk.desk import Desk
 from crypy.desk.order import Order
+from crypy.desk import repl
 
 """Entrypoint for the desk subpackage
 Manages one (currently) exchange, via CLI
@@ -24,52 +25,40 @@ Manages one (currently) exchange, via CLI
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--h', '--help', '?'])
 
+desk = None
+
+
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('-e', '--exchange', default=gv.defEXCHANGE, type=click.Choice(dict(gv.exchange_data).keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli(ctx, exchange):
+
+    global desk
+    if desk is None:
+        desk = Desk(exchange=exchange)
+
     # starting repl if no command passed
     if ctx.invoked_subcommand is None:
-        prompt_toolkit.shortcuts.clear()
-        click.echo(f"-== TRADING CLI ==-")
-        click.echo(f"EXCHANGE: {exchange}")
-        #ctx.invoke(help) #TODO invoke help cmd on startup
-        ctx.exchangeName = exchange #will be available from ctx.parent.exchangeName after repl launched
 
-        #Setup the prompt
-        #https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
-        prompt_kwargs = {
-            'message': f"{exchange}> ",
-            'history': prompt_toolkit.history.FileHistory(os.path.join(sys.path[0], 'crypy.hist')), #TODO don't use os.path
-            'auto_suggest': prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),
-            'wrap_lines': True,
-            'bottom_toolbar': [
-                #('class:bottom-toolbar-logo', ' Ϟ ') #TODO setup
-            ]
-        }
-
-        # launching repl
-        crepl(ctx, prompt_kwargs=prompt_kwargs, allow_system_commands = False)
-        
+        ctx.exchangeName = exchange  # will be available from ctx.parent.exchangeName after repl launched
+        crepl = repl.start_repl(ctx, exchange)
 
     # otherwise invoke the specified subcommand (default behavior)
-    else:
-        ctx.obj = Desk(exchange=ctx.parent.exchangeName)
 
 @cli.command()
 @click.pass_obj
-def exchange_info(ctx):
+def exchange_info(obj):
     """print exchange info to file exg_%EXCHANGE_NAME%.txt"""
-    print(ctx.do_getExchangeInfo())
+    print(desk.do_getExchangeInfo())
 
 @cli.command()
 @click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
 #TODO limit argument
 @click.pass_obj
-def list(ctx, what):
+def list(obj, what):
     """display all followed pairs informations"""
-    print( ctx.do_list(what = what, customParams = {}) )  #todo customparams for exchange if needed
+    print( desk.do_list(what = what, customParams = {}) )  #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -85,7 +74,7 @@ def balance(ctx):
     """
     Get user balance (private data)
     """
-    print( ctx.obj.do_fetchBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -93,7 +82,7 @@ def balance_total(ctx):
     """
     Get user total balance (private data)
     """
-    print( ctx.obj.do_fetchTotalBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchTotalBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -101,7 +90,7 @@ def balance_free(ctx):
     """
     Get user free balance (private data)
     """
-    print( ctx.obj.do_fetchFreeBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print(desk.do_fetchFreeBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -109,7 +98,7 @@ def balance_used(ctx):
     """
     Get user used balance (private data)
     """
-    print( ctx.obj.do_fetchUsedBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchUsedBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 @cli.command()
 @click.pass_context
@@ -117,7 +106,7 @@ def balance_partial(ctx):
     """
     Get user partial? balance (private data)
     """
-    print( ctx.obj.do_fetchPartialBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchPartialBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 
 @cli.command()
@@ -131,7 +120,7 @@ def ledger(ctx, assets, type, since, limit):
     Get user asset ledger (private data)
     """
     #todo use assets and type params (possible w ccxt ? maybe through "code" arg ?)
-    print( ctx.obj.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
+    print( desk.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
 
 
 #@cli.command()
@@ -156,7 +145,7 @@ def pair(ctx, ticker):
     Trading a specific pair defined by its ticker
     """
     click.echo(f"PAIR: {ticker}")
-    ctx.obj.ticker = ticker
+    desk.ticker = ticker
 
 
 def order_options_all(ctx):     
@@ -221,7 +210,7 @@ def short(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     Pair: Create/Update a SHORT order
     """
     side = "sell" #ccxt value
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
     
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
@@ -236,7 +225,7 @@ def long(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     Pair: Create/Update a LONG order
     """
     side = "buy" #ccxt value
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
 
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
@@ -255,7 +244,7 @@ def stop(ctx, side, full, expiracy, id, amount, price):
         exec_inst += ',Close'
         amount = None
     order_type = 'Stop'
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
@@ -265,7 +254,7 @@ def stop(ctx, side, full, expiracy, id, amount, price):
 @order_options_stops
 @click.argument('offset-price', nargs=1, type=float, required=True)
 @click.pass_context
-def trailing_stop(ctx, side, expiracy, id, amount, offset_price):
+def trailing_stop(ctx, side, full, expiracy, id, amount, offset_price):
     """
     Pair: Set/Update a trailing stop for a position (WARNING: ATM be careful if no position and with the --side option which might trigger a Market order (TODO abstract this))
     """
@@ -276,7 +265,7 @@ def trailing_stop(ctx, side, expiracy, id, amount, offset_price):
     order_type = 'Pegged'
     peg_price_type = 'TrailingStopPeg'
     peg_offset_value=offset_price
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
 @pair.command()
 @order_options_all
@@ -294,7 +283,7 @@ def take_profit(ctx, side, full, expiracy, id, amount, price):
         amount = None
     order_type = 'MarketIfTouched'
 
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
 
 #TODO: we might need to do trailing-stop-short, trailing-stop-long and trailing-take-profits orders
@@ -318,7 +307,7 @@ def orderbook(ctx, limit):
     """
     Pair: L2 orderbook
     """
-    print( Order.fetchL2OrderBook(desk = ctx, symbol = gv.ticker2symbol[ctx.obj.ticker], limit = limit) )
+    print( Order.fetchL2OrderBook(desk = desk, symbol = gv.ticker2symbol[desk.ticker], limit = limit) )
 
 @pair.command()
 @click.option('-s', '--since', type=datetime, show_default=True)
@@ -328,7 +317,7 @@ def last_trades(ctx, since, limit):
     """
     Pair: list of last trades (not user related)
     """
-    print( ctx.obj.do_fetchTrades(symbol = gv.ticker2symbol[ctx.obj.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchTrades(symbol = gv.ticker2symbol[desk.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
 @pair.command()
 @click.option('-tf', '--timeframe', default='1m', type=click.Choice(['1m', '3m', '15m', '30m', '1h', '2H', '4H', '6H', '12H', '1D', '3D', '1W', '1M']), show_default=True, help="timeframe in minutes") #TODO choices must depend on exchange i suppose
@@ -340,7 +329,7 @@ def ohlcv(ctx, timeframe, since, limit):
     Pair: OHLCV data for interval in minutes
     """
     #print(gv.ticker2symbol[ctx.obj.ticker])
-    print( ctx.obj.do_fetchOHLCV(symbol = gv.ticker2symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    print(desk.do_fetchOHLCV(symbol = gv.ticker2symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
 @pair.command()
 @click.pass_context
@@ -348,7 +337,7 @@ def market_price(ctx):
     """
     Pair: Current Market Price
     """
-    print( 'market price: ' + str(ctx.obj.do_fetchMarketPrice(symbol = gv.ticker2symbol[ctx.obj.ticker])) )
+    print( 'market price: ' + str(desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[desk.ticker])) )
     
 @pair.command()
 @click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
@@ -356,7 +345,7 @@ def market_price(ctx):
 @click.pass_context
 def list(ctx, what):
     """Pair: (user) information"""
-    print( ctx.obj.do_list(what = what, symbol = gv.ticker2symbol[ctx.obj.ticker], customParams = {}) )  #todo customparams for exchange if needed
+    print( desk.do_list(what = what, symbol = gv.ticker2symbol[desk.ticker], customParams = {}) )  #todo customparams for exchange if needed
 
 
 if __name__ == '__main__':
