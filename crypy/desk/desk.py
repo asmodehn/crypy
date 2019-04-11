@@ -7,6 +7,8 @@ import inspect #useful to debug w inspect.signature for example
 
 import json
 
+from desk import capital
+
 try:
     import global_vars as gv
 except (ImportError, ValueError, ModuleNotFoundError):
@@ -40,6 +42,12 @@ class Desk(object):
             self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
         
         self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
+
+
+        self.capital = capital.Capital(self.exchange)
+        self.capital.update()
+
+
 
     def do_getExchangeInfo(self):
         filename = 'exg_' + gv.exchange_data[self.exchangeName]['confSection'] + '.txt'
@@ -147,3 +155,4 @@ class Desk(object):
         ask = orderbook['asks'][0][0] if len (orderbook['asks']) > 0 else None
         spread = (ask - bid) if (bid and ask) else None
         return { 'bid': bid, 'ask': ask, 'spread': spread }
+
