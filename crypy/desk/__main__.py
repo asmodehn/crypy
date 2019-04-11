@@ -145,7 +145,7 @@ def pair(ctx, ticker):
     Trading a specific pair defined by its ticker
     """
     click.echo(f"PAIR: {ticker}")
-    ctx.obj.ticker = ticker
+    desk.ticker = ticker
 
 
 def order_options_all(ctx):     
@@ -210,7 +210,7 @@ def short(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     Pair: Create/Update a SHORT order
     """
     side = "sell" #ccxt value
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
     
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
@@ -225,7 +225,7 @@ def long(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     Pair: Create/Update a LONG order
     """
     side = "buy" #ccxt value
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
 
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
@@ -244,7 +244,7 @@ def stop(ctx, side, full, expiracy, id, amount, price):
         exec_inst += ',Close'
         amount = None
     order_type = 'Stop'
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
     ##TEMP DEBUG
     #ctx.invoke(list, what='orders')
@@ -265,7 +265,7 @@ def trailing_stop(ctx, side, full, expiracy, id, amount, offset_price):
     order_type = 'Pegged'
     peg_price_type = 'TrailingStopPeg'
     peg_offset_value=offset_price
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
 @pair.command()
 @order_options_all
@@ -283,7 +283,7 @@ def take_profit(ctx, side, full, expiracy, id, amount, price):
         amount = None
     order_type = 'MarketIfTouched'
 
-    print(make_order(ticker = ctx.obj.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+    print(make_order(ticker = desk.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
 
 
 #TODO: we might need to do trailing-stop-short, trailing-stop-long and trailing-take-profits orders
@@ -307,7 +307,7 @@ def orderbook(ctx, limit):
     """
     Pair: L2 orderbook
     """
-    print( Order.fetchL2OrderBook(desk = ctx, symbol = gv.ticker2symbol[ctx.obj.ticker], limit = limit) )
+    print( Order.fetchL2OrderBook(desk = desk, symbol = gv.ticker2symbol[desk.ticker], limit = limit) )
 
 @pair.command()
 @click.option('-s', '--since', type=datetime, show_default=True)
@@ -317,7 +317,7 @@ def last_trades(ctx, since, limit):
     """
     Pair: list of last trades (not user related)
     """
-    print( ctx.obj.do_fetchTrades(symbol = gv.ticker2symbol[ctx.obj.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchTrades(symbol = gv.ticker2symbol[desk.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
 @pair.command()
 @click.option('-tf', '--timeframe', default='1m', type=click.Choice(['1m', '3m', '15m', '30m', '1h', '2H', '4H', '6H', '12H', '1D', '3D', '1W', '1M']), show_default=True, help="timeframe in minutes") #TODO choices must depend on exchange i suppose
@@ -329,7 +329,7 @@ def ohlcv(ctx, timeframe, since, limit):
     Pair: OHLCV data for interval in minutes
     """
     #print(gv.ticker2symbol[ctx.obj.ticker])
-    print( ctx.obj.do_fetchOHLCV(symbol = gv.ticker2symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    print(desk.do_fetchOHLCV(symbol = gv.ticker2symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
 @pair.command()
 @click.pass_context
@@ -337,7 +337,7 @@ def market_price(ctx):
     """
     Pair: Current Market Price
     """
-    print( 'market price: ' + str(ctx.obj.do_fetchMarketPrice(symbol = gv.ticker2symbol[ctx.obj.ticker])) )
+    print( 'market price: ' + str(desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[desk.ticker])) )
     
 @pair.command()
 @click.argument('what', type=click.Choice(['data', 'orders', 'positions', 'trades']), default='data')
@@ -345,7 +345,7 @@ def market_price(ctx):
 @click.pass_context
 def list(ctx, what):
     """Pair: (user) information"""
-    print( ctx.obj.do_list(what = what, symbol = gv.ticker2symbol[ctx.obj.ticker], customParams = {}) )  #todo customparams for exchange if needed
+    print( desk.do_list(what = what, symbol = gv.ticker2symbol[desk.ticker], customParams = {}) )  #todo customparams for exchange if needed
 
 
 if __name__ == '__main__':
