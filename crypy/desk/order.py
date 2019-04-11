@@ -159,13 +159,13 @@ class Order():
             return "Error: " + str(type(error)) + " " + str(error)
 
     @staticmethod
-    def cancel(order_ids):
-        if not 'cancelOrder' in self.exchange.has or not self.exchange.has['cancelOrder']:
+    def cancel(exchange, order_ids):
+        if not 'cancelOrder' in exchange.has or not exchange.has['cancelOrder']:
             return f'cancelOrder() not available for this exchange'
 
         for order_id in order_ids:
             try:
-                self.exchange.cancelOrder(order_id)
+                exchange.cancelOrder(order_id)
                 print(f'order(s) {order_id} canceled')
                 #TODO remove from order log also
             except ccxt.NetworkError as err:
