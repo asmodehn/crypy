@@ -65,7 +65,7 @@ class ExchangeSection:
     A Section is immutable.
     """
 
-    credentials_file: Path  # value computed in config, based on section name
+    credentials_file: typing.Optional[Path]  # value computed in config, based on section name
     credentials_parser: configparser.ConfigParser = field(
         init=False,
         default=configparser.ConfigParser(
