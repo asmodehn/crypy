@@ -27,3 +27,38 @@ class Capital:
         #self.open_orders = self.desk.do_()
         self.balance = self.desk.balance
         return self
+
+    def do_status(self, ticker = None):
+        """
+        Return capital status for a specific ticker or all
+        Format TBD
+        TODO
+        """
+        pass
+
+    def do_tradableAmount(self, ticker = None):
+        """
+        Return tradable amount for a ticker or default amount if not specified.
+        Depending on Capital Management strategy
+        TODO
+        """
+        pass
+
+    def do_getBalance(self, ticker = None, tf = None):
+        """
+        Return beautified balance
+        For a specific ticker if defined or all (default)
+        If @param tf is specified, additionnaly return PL in value and % for the specified timeframe
+        TODO
+        """
+        pass
+
+    def updateModelFromTrader(self):
+        """
+        Update local knowledge using info sent by the trader (order set not filled for a position => capital not yet used but might be, ...)
+        TODO
+        """
+        pass
+
+    def getCapital(self, value, ticker):
+        pass
