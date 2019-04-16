@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from cli import cli
-from capital_cli import capital
+from desk_cli import cli_root_group as cli
+from capital_cli import capital_group
 from order_cli import order_group
 
 """Entrypoint for the desk subpackage

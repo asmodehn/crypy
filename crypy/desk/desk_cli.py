@@ -32,7 +32,7 @@ desk = None
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('-e', '--exchange', default=gv.defEXCHANGE, type=click.Choice(dict(gv.exchange_data).keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
-def cli(ctx, exchange):
+def cli_root_group(ctx, exchange):
     #ensure that ctx.obj exists and is a dict
     ctx.ensure_object(dict)
 
@@ -48,13 +48,13 @@ def cli(ctx, exchange):
 
     # otherwise invoke the specified subcommand (default behavior)
 
-@cli.command()
+@cli_root_group.command()
 @click.pass_obj
 def exchange_info(obj):
     """print exchange info to file exg_%EXCHANGE_NAME%.txt"""
     print(desk.do_getExchangeInfo())
 
-@cli.command()
+@cli_root_group.command()
 @click.argument('what', type=click.Choice(['data', 'orders-all', 'orders-open', 'orders-closed', 'positions', 'trades']), default='data')
 #TODO limit argument
 @click.pass_obj
@@ -62,7 +62,7 @@ def list(obj, what):
     """display all followed pairs informations"""
     print( desk.do_list(what = what, customParams = {}) )  #todo customparams for exchange if needed
 
-@cli.command()
+@cli_root_group.command()
 @click.pass_context
 def exit(ctx):
     """exit app by using :exit, :q, :quit"""
@@ -70,7 +70,7 @@ def exit(ctx):
     #ctx.invoke(repl.exit)
     #TODO find a way to run the fucking cmd
     
-@cli.command()
+@cli_root_group.command()
 @click.pass_context
 def balance(ctx):
     """
@@ -78,7 +78,7 @@ def balance(ctx):
     """
     print( desk.do_fetchBalance( customParams = {}) ) #todo customparams for exchange if needed
 
-@cli.command()
+@cli_root_group.command()
 @click.pass_context
 def balance_total(ctx):
     """
@@ -86,7 +86,7 @@ def balance_total(ctx):
     """
     print( desk.do_fetchTotalBalance( customParams = {}) ) #todo customparams for exchange if needed
 
-@cli.command()
+@cli_root_group.command()
 @click.pass_context
 def balance_free(ctx):
     """
@@ -94,7 +94,7 @@ def balance_free(ctx):
     """
     print(desk.do_fetchFreeBalance( customParams = {}) ) #todo customparams for exchange if needed
 
-@cli.command()
+@cli_root_group.command()
 @click.pass_context
 def balance_used(ctx):
     """
@@ -102,7 +102,7 @@ def balance_used(ctx):
     """
     print( desk.do_fetchUsedBalance( customParams = {}) ) #todo customparams for exchange if needed
 
-@cli.command()
+@cli_root_group.command()
 @click.pass_context
 def balance_partial(ctx):
     """
@@ -111,7 +111,7 @@ def balance_partial(ctx):
     print( desk.do_fetchPartialBalance( customParams = {}) ) #todo customparams for exchange if needed
 
 
-@cli.command()
+@cli_root_group.command()
 @click.option('-a', '--assets', type=str, default='all', show_default=True, help='comma delimited list of assets to restrict output to')
 @click.option('-t', '--type', type=click.Choice(['all', 'deposit', 'withdrawal', 'trade', 'margin']), default='all', show_default=True, help="restrict type of ledger to retrieve")
 @click.option('-s', '--since', type=datetime, show_default=True)
@@ -125,7 +125,7 @@ def ledger(ctx, assets, type, since, limit):
     print( desk.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
 
 
-#@cli.command()
+#@cli_root_group.command()
 #@click.option('-f', '--from-address', type=str, show_default=True, help="address to withdrawal from")
 #@click.option('-t', '--to-address', type=str, show_default=True, help="address to deposit to")
 #@click.option('-a', '--amount', type=float, default='all', show_default=True, help="amount to transfer")
