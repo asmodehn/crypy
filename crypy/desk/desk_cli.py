@@ -14,6 +14,8 @@ import prompt_toolkit
 
 import datetime
 
+import crypy.config
+
 import crypy.desk.global_vars as gv
 from crypy.desk.desk import Desk
 from crypy.desk.order import Order
@@ -27,10 +29,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--h', '--help', '?'])
 
 desk = None
 
+# Loading config early to customize choice based on it.
+config = crypy.config.Config()
 
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
-@click.option('-e', '--exchange', default=gv.defEXCHANGE, type=click.Choice(dict(gv.exchange_data).keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
+@click.option('-e', '--exchange', default=gv.defEXCHANGE, type=click.Choice(config.sections.keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
 def cli_root_group(ctx, exchange):
     #ensure that ctx.obj exists and is a dict
@@ -38,7 +42,8 @@ def cli_root_group(ctx, exchange):
 
     global desk
     if desk is None:
-        desk = ctx.obj['desk'] = ctx.obj.get('desk', Desk(exchange=exchange))
+        exchange_config = config.sections[exchange]
+        desk = ctx.obj['desk'] = ctx.obj.get('desk', Desk(conf=exchange_config))
 
     # starting repl if no command passed
     if ctx.invoked_subcommand is None:

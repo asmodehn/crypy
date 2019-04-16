@@ -15,10 +15,8 @@ import datetime
 
 import crypy.desk.global_vars as gv
 
-from crypy.desk.order import Order
-from crypy.desk import repl
-
-from desk_cli import cli_root_group
+from .order import Order
+from .desk_cli import cli_root_group
 
 desk = None
 

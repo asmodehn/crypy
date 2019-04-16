@@ -1,3 +1,4 @@
+import dataclasses
 import unittest
 #https://docs.python.org/3/library/unittest.mock.html
 # https://docs.pytest.org/en/latest/unittest.html
@@ -11,7 +12,11 @@ from crypy.config import resolve, ExchangeSection
 
 params = [
     #("Default Config - Public", ExchangeSection(credentials_file='')),
-    ("Default Config - Private", ExchangeSection(credentials_file=resolve('testnet.bitmex.key'), )),
+    ("Default Config - Private", ExchangeSection(
+        name="testnet.bitmex",
+        credentials_file=resolve('testnet.bitmex.key'),
+        impl_hook="impl= ccxt.bitmex(config); impl.urls['api'] = impl.urls['test']",
+    )),
 ]
 
 class TestOrder(unittest.TestCase):
@@ -27,7 +32,7 @@ class TestOrder(unittest.TestCase):
                 # Hack to build a fake config around the exchange we are interested in
                 # TODO : cleanup desk !
 
-                desk = Desk(conf=TestOrder.fakeConfigToMakeDeskHappy(section=exchange_section), exchange='testnet.bitmex')
+                desk = Desk(conf = exchange_section )
 
                 assert desk.markets
 
@@ -37,7 +42,7 @@ class TestOrder(unittest.TestCase):
                 # Hack to build a fake config around the exchange we are interested in
                 # TODO : cleanup desk !
 
-                desk = Desk(conf=TestOrder.fakeConfigToMakeDeskHappy(section=exchange_section), exchange='testnet.bitmex')
+                desk = Desk(conf= exchange_section )
 
                 assert desk.balance
                 assert desk.balance.free

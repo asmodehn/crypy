@@ -5,17 +5,25 @@ import unittest
 import crypy.desk.global_vars as gv #TODO Validate it first
 from crypy.desk.desk import Desk #TODO Validate it first
 from crypy.desk.order import Order
+from crypy.config import resolve, ExchangeSection
 
 
 params = [
     ("create" , None),
     ("update", '686796f9-61d9-d3fa-b690-551d94385b65,8517156d-42d6-67c7-1507-c7f6692f1a98')
 ]
+
+
 class TestOrder(unittest.TestCase):
     exchangeName = "testnet.bitmex" #TODO temp in the ne d will need to very all exchanges
     ticker = 'BTCUSD' #TODO temp in the ne d will need to very all traded pair for the exchange
 
-    desk = Desk(exchange=exchangeName)
+    desk = Desk(ExchangeSection(
+        name="testnet.bitmex",
+        credentials_file=resolve('testnet.bitmex.key'),
+        impl_hook="impl= ccxt.bitmex(config); impl.urls['api'] = impl.urls['test']",
+    ))
+
     exchange = desk.exchange
     #marketPrice = desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])
     marketPrice = { 'bid': 4000, 'ask': 4001, 'spread': 1 }
@@ -49,7 +57,7 @@ class TestOrder(unittest.TestCase):
         for ccxtMethod in ccxtExchangeNeededMethods:
             if ccxtMethod not in self.exchange.has or not self.exchange.has[ccxtMethod]: #ccxt unified method check
                 if not hasattr(self.exchange, ccxtMethod): #ccxt implicit (not unified) method check
-                    pytest.fail( msg =  f'{ccxtMethod}() not available for this exchange' )
+                    self.fail( msg =  f'{ccxtMethod}() not available for this exchange' )
 
     def test_LimitLong(self):
         for msg, id in params:

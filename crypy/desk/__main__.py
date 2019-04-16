@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from desk_cli import cli_root_group as cli
-from capital_cli import capital_group
-from order_cli import order_group
+from crypy.desk.desk_cli import cli_root_group as cli
+from crypy.desk.capital_cli import capital_group
+from crypy.desk.order_cli import order_group
 
 """Entrypoint for the desk subpackage
 Manages one (currently) exchange, via CLI

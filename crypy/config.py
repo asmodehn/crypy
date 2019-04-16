@@ -74,10 +74,11 @@ class ExchangeSection:
         repr=False,
     )
 
+    name: str
+    impl_hook: str = 'print("You need to define impl_hook in the configuration"); exit()'
     timeout: int = 30000
     enableRateLimit: bool = True
     verbose: bool = True
-    impl: str = "ccxt"  # TODO : add the actual call to build the exchange instance.
 
     def parse_creds(self, credentials_file):
         self.credentials_parser.optionxform = str  # to prevent lowering keys
@@ -95,6 +96,13 @@ class ExchangeSection:
                     self.credentials_parser.read_string(config_string)
         except Exception as e:
             print(e)
+
+    def exec_hook(self, ccxt):
+        # Using the impl_hook from settings.ini
+        locals = {'config': asdict(self), 'impl': None}
+        # TODO : find a cleaner way to pass globals (config defaults from another place ?)
+        exec(self.impl_hook, {'ccxt': ccxt}, locals)  # TODO check exchange id existing in CCXT
+        return locals.get('impl')
 
     @property
     def apiKey(self):
@@ -151,18 +159,21 @@ class Config:
             sec_kwargs = {}
             """parses a section according to dataclass annotations"""
             for k, v in ExchangeSection.__annotations__.items():
-                try:
-                    # TODO : support optional annotation ?
-                    if v is bool:
-                        sec_kwargs[k] = self.parser.getboolean(section, k)
-                    elif v is int:
-                        sec_kwargs[k] = self.parser.getint(section, k)
-                    elif v is float:
-                        sec_kwargs[k] = self.parser.getfloat(section, k)
-                    elif v is str:
-                        sec_kwargs[k] = self.parser.get(section, k)
-                except configparser.NoOptionError:
-                    pass  # we will use the dataclass default instead
+                if k is 'name':
+                    sec_kwargs[k] = section
+                else:
+                    try:
+                        # TODO : support optional annotation ?
+                        if v is bool:
+                            sec_kwargs[k] = self.parser.getboolean(section, k)
+                        elif v is int:
+                            sec_kwargs[k] = self.parser.getint(section, k)
+                        elif v is float:
+                            sec_kwargs[k] = self.parser.getfloat(section, k)
+                        elif v is str:
+                            sec_kwargs[k] = self.parser.get(section, k)
+                    except configparser.NoOptionError:
+                        pass  # we will use the dataclass default instead
 
             # Assigning default credential filename if not present.
             # note if settings.ini file is setup with full absolute path, then keyfiles are supposed to be in the same location

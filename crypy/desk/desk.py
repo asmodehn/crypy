@@ -54,21 +54,16 @@ class Desk:
         bal = BalanceAll(**{e: bal_raw.get(e) for e in ['free', 'used', 'total']})
         return bal
 
-    def __init__(self, conf: config.Config = None, exchange=gv.defEXCHANGE):
-        # TODO : the desk doesnt need to access all the config + the exchange string. Only the section of one exchange (and the defaults).
-        self.config = conf if conf is not None else config.Config()
-        self.exchangeName = (exchange or gv.defEXCHANGE)
-        exgData = gv.exchange_data[self.exchangeName] #TODO check existance
-        exgConfig = dataclasses.asdict(self.config.sections[exgData['confSection']])
+    def __init__(self, conf: config.ExchangeSection = None):
+        self.exchangeName = conf.name
+
+        # Using the impl_hook from settings.ini
+        self.exchange = conf.exec_hook(ccxt=ccxt)
+
         # Requesting Key from initialization
-        # TODO : remove that to allow anonymous user to retrieve data.
-        exgConfig.update({
-            'apiKey': self.config.sections[exgData['confSection']].apiKey,
-            'secret': self.config.sections[exgData['confSection']].secret,
-        })
-        self.exchange = getattr(ccxt, exgData['ccxtName'])(exgConfig) #TODO check exchange id existing in CCXT
-        if 'test' in exgData and exgData['test']:
-            self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
+        # TODO : anonymous by default, on demand auth
+        self.exchange.apiKey = conf.apiKey
+        self.exchange.secret = conf.secret
 
         self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
@@ -76,7 +71,7 @@ class Desk:
         self.capital.update()
 
     def do_getExchangeInfo(self):
-        filename = 'exg_' + gv.exchange_data[self.exchangeName]['confSection'] + '.txt'
+        filename = 'exg_' + self.exchangeName + '.txt'
         file = open( filename, 'w')
         print ("### HAS ###", file = file)
         print (str(self.exchange.has).replace(', ', ', \r\n'), file = file)
