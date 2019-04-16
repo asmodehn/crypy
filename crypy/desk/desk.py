@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-import dataclasses
 import typing
 
 import json
@@ -19,14 +18,14 @@ from .utils import formatTS
 try:
     from ..euc import ccxt
     from .. import config
-    from desk.model.balance import BalanceAll
-    from .symbol import Symbol, SymbolError
+    from .model.balance import BalanceAll
+    from .model.symbol import Symbol, SymbolError
     from .market import Market
 except (ImportError, ValueError, ModuleNotFoundError):
     from crypy.euc import ccxt
     from crypy import config
     from crypy.desk.model.balance import BalanceAll
-    from crypy.desk.symbol import Symbol, SymbolError
+    from crypy.desk.model.symbol import Symbol, SymbolError
     from crypy.desk.market import Market, MarketError
 
 

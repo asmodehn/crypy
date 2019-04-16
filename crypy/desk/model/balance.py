@@ -6,9 +6,9 @@ from dataclasses import dataclass
 import typing
 
 try:
-    from desk.symbol import Currency
+    from desk.model.symbol import Currency
 except (ImportError, ValueError, ModuleNotFoundError):
-    from crypy.desk.symbol import Currency
+    from desk.model.symbol import Currency
 
 
 @dataclass(frozen=True)  # prevent accidental change
@@ -41,3 +41,5 @@ class BalanceAll:
                     )
                 }
             )
+
+        return balances

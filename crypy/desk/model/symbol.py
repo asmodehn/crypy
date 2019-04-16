@@ -7,9 +7,13 @@ from enum import Enum
 
 from pydantic.dataclasses import dataclass
 try:
-    from .errors import CrypyException
+    from desk.errors import CrypyException
 except (ImportError, ValueError):
     from crypy.desk.errors import CrypyException
+
+
+class CurrencyError(CrypyException):
+    pass
 
 
 class SymbolError(CrypyException):
@@ -26,9 +30,8 @@ class Currency(Enum):
     def __str__(self) -> str:
         return f'{self.name}'
 
-    @classmethod
-    def from_str(cls, s: str)-> typing.Optional[Currency]:
-        return getattr(cls, s)
+    def __repr__(self) -> str:
+        return f'{self.name}'
 
 
 # Enums to store accepted currencies.
@@ -38,11 +41,10 @@ class Fiat(Currency):
     >>> Fiat('EUR')
     EUR
     """
-    EUR= 1
-    EURR = 1
-    USD= 2
-    CAD= 3
-    KRW= 4
+    EUR= 'EUR'
+    USD= 'USD'
+    CAD= 'CAD'
+    KRW= 'KRW'
 
 
 class Crypto(Currency):
@@ -84,13 +86,13 @@ def currency(c: str) -> typing.Optional[Currency]:
 
     """
     if c in Fiat.__members__:
-        return Fiat.from_str(c)
+        return getattr(Fiat, c)
     elif c in Crypto.__members__:
-        return Crypto.from_str(c)
+        return getattr(Crypto, c)
     elif c in Alt.__members__:
-        return Alt.from_str(c)
+        return getattr(Alt, c)
     else:
-        return None
+        raise CurrencyError
 
 
 
