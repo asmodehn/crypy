@@ -6,7 +6,6 @@ import os
 import sys
 
 import click
-from click_repl import repl as crepl
 import prompt_toolkit
 
 #from dataclasses import asdict
@@ -19,12 +18,12 @@ import crypy.desk.global_vars as gv
 from crypy.desk.order import Order
 from crypy.desk import repl
 
-from cli import cli
+from desk_cli import cli_root_group
 
 desk = None
 
 ### CLI PAIR Sub Commands
-@cli.group('pair')
+@cli_root_group.group('pair')
 @click.option('-t', '--ticker', default=gv.defPAIR, type=str, show_default=True)  #TODO define valid pair tickers per exchange
 @click.pass_context
 def order_group(ctx, ticker):

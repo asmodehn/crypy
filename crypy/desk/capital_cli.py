@@ -1,18 +1,18 @@
 import click
 import prompt_toolkit
 
-from cli import cli
+from desk_cli import cli_root_group
 
 ### CLI CAPITAL manager Sub Commands
-@cli.group()
+@cli_root_group.group('capital')
 @click.pass_context
-def capital(ctx):
+def capital_group(ctx):
     """
     Managing capital for the exchange (all pairs)
     """
     click.echo(f"Capital")
 
-@capital.command()
+@capital_group.command()
 @click.pass_context
 def balance(ctx):
     """Capital: user balance"""
