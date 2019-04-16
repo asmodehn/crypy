@@ -51,7 +51,7 @@ class Capital:
         If @param tf is specified, additionnaly return PL in value and % for the specified timeframe
         TODO
         """
-        pass
+        return "WIP"
 
     def updateModelFromTrader(self):
         """
@@ -60,7 +60,7 @@ class Capital:
         """
         pass
 
-    def getCapital(self, mount, ticker):
+    def receiveCapital(self, mount, ticker):
         """
         Get capital amount for a ticker in update internal knowledge
         """
