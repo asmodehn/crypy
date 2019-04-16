@@ -28,7 +28,7 @@ pydantic = "*"
 hypothesis = "*"
 mpmath = "*"
 structlog = "*"
-parameterized = "*"
+#parameterized = "*"
 
 [dev-packages]
 
