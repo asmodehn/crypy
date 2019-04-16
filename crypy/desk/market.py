@@ -13,7 +13,6 @@ from .bounded_amount import BoundedAmount, BoundedAmountError
 from .bounded_cost import BoundedCost, BoundedCostError
 from .symbol import Symbol, SymbolError
 from .ticker import Ticker, TickerError
-#from .limits import Limits, LimitsError
 
 from datetime import datetime
 import dateutil.parser

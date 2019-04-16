@@ -17,10 +17,10 @@ except (ImportError, ValueError):
     from crypy import config
 
 try:
-    from .. import errors, bounds, limiter, exchange, market, symbol, ticker, limits
+    from .. import errors, bounds, limiter, exchange, market, symbol, ticker
     #from ..precision import Precision  # solving forward ref errors for pydantic
 except (ImportError, ValueError):
-    from crypy.desk import errors, bounds, limiter, exchange, market, symbol, ticker, limits
+    from crypy.desk import errors, bounds, limiter, exchange, market, symbol, ticker
     #from crypy.desk.precision import Precision  # solving forward ref errors for pydantic
 
 """
@@ -51,19 +51,6 @@ class Bounds(bounds.Bounds):
 
 
 @dataclass
-class Limits(limits.Limits):
-
-    @staticmethod
-    def from_dict(data: dict) -> Limits:
-        return Limits(**data)
-
-    # making sure we get our overload of Bounds as type here
-    price: Bounds
-    amount: Bounds
-    cost: Bounds
-
-
-@dataclass
 class Market(market.Market):
 
     @staticmethod
@@ -74,16 +61,6 @@ class Market(market.Market):
     @pydantic.validator('symbol')
     def symbol_from_str(cls, v: str):
         return Symbol.from_str(v)
-
-    # Using overloaded limits (depending on overloaded bounds for ccxt)
-    @pydantic.validator('limits')
-    def limits_from_dict(cls, v: dict ):
-        return Limits.from_dict(v)
-
-    # # Using base precision (no extra meaning for ccxt)
-    # @pydantic.validator('precision')
-    # def precision_from_dict(cls, v: dict):
-    #     return Precision.from_dict(v)
 
 
     def ticker(self) -> ticker.Ticker:
