@@ -18,10 +18,10 @@ except (ImportError, ValueError):
 
 try:
     from .. import errors, bounds, limiter, exchange, market, symbol, ticker, limits
-    from ..precision import Precision  # solving forward ref errors for pydantic
+    #from ..precision import Precision  # solving forward ref errors for pydantic
 except (ImportError, ValueError):
     from crypy.desk import errors, bounds, limiter, exchange, market, symbol, ticker, limits
-    from crypy.desk.precision import Precision  # solving forward ref errors for pydantic
+    #from crypy.desk.precision import Precision  # solving forward ref errors for pydantic
 
 """
 Module implementing APIs with various exchanges, through ccxt.
@@ -80,10 +80,10 @@ class Market(market.Market):
     def limits_from_dict(cls, v: dict ):
         return Limits.from_dict(v)
 
-    # Using base precision (no extra meaning for ccxt)
-    @pydantic.validator('precision')
-    def precision_from_dict(cls, v: dict):
-        return Precision.from_dict(v)
+    # # Using base precision (no extra meaning for ccxt)
+    # @pydantic.validator('precision')
+    # def precision_from_dict(cls, v: dict):
+    #     return Precision.from_dict(v)
 
 
     def ticker(self) -> ticker.Ticker:

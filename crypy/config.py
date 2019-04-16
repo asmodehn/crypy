@@ -78,22 +78,24 @@ class ExchangeSection:
     timeout: int = 30000
     enableRateLimit: bool = True
     verbose: bool = True
-    impl: str = "ccxt"
+    impl: str = "ccxt"  # TODO : add the actual call to build the exchange instance.
 
     def parse_creds(self, credentials_file):
         self.credentials_parser.optionxform = str  # to prevent lowering keys
         # Loading file
         resolved_cf = resolve(str(credentials_file))
-
-        with open(resolved_cf, 'r') as f:
-            config_string = f.read()
-            try:
-                self.credentials_parser.read_string(config_string)
-            except (configparser.MissingSectionHeaderError, ):
-                config_string = '[credentials]\n' + config_string
-                with open(resolved_cf, 'w') as fw:
-                    fw.write(config_string)
-                self.credentials_parser.read_string(config_string)
+        try:
+            with open(resolved_cf, 'r') as f:
+                config_string = f.read()
+                try:
+                    self.credentials_parser.read_string(config_string)
+                except (configparser.MissingSectionHeaderError, ):
+                    config_string = '[credentials]\n' + config_string
+                    with open(resolved_cf, 'w') as fw:
+                        fw.write(config_string)
+                    self.credentials_parser.read_string(config_string)
+        except Exception as e:
+            print(e)
 
     @property
     def apiKey(self):
@@ -123,7 +125,7 @@ class Config:
     filepath: typing.Optional[Path] = field(
         init=True, default=resolve(default_filename), repr=True
     )
-
+    #TODO : extract the file reading part to a function, so we can pass strings and more ?
     parser: configparser.ConfigParser = field(
         init=False,
         default=configparser.ConfigParser(

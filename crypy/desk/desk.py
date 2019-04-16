@@ -3,8 +3,6 @@
 import dataclasses
 import typing
 
-import inspect #useful to debug w inspect.signature for example
-
 import json
 
 
@@ -17,23 +15,53 @@ except (ImportError, ValueError, ModuleNotFoundError):
 
 from .utils import formatTS
 
-#from .symbol import Symbol, SymbolError
-#from .market import Market, MarketError
 
 try:
     from ..euc import ccxt
     from .. import config
+    from desk.model.balance import BalanceAll
+    from .symbol import Symbol, SymbolError
+    from .market import Market
 except (ImportError, ValueError, ModuleNotFoundError):
     from crypy.euc import ccxt
     from crypy import config
+    from desk.model.balance import BalanceAll
+    from crypy.desk.symbol import Symbol, SymbolError
+    from crypy.desk.market import Market, MarketError
 
-class Desk(object):
+
+class Desk:
+
+    @property
+    def markets(self) -> typing.Dict[Symbol, Market]:
+        if self.exchange.markets is None:
+            self.exchange.load_markets()
+
+        # symbol filter
+        filtered_syms = dict()
+        for s, m in self.exchange.markets.items():
+            try:
+                filtered_syms[Symbol.from_str(s)] = m
+            except SymbolError as se:
+                pass
+        markets_dict = {s: Market.from_dict(m) for s, m in filtered_syms.items()}
+        return markets_dict
+
+    @property
+    def balance(self) -> BalanceAll:
+        # TODO : timer to do the call only after some timeout...
+        bal_raw = self._ccxtMethod('fetchBalance')
+        bal = BalanceAll(**{e: bal_raw.get(e) for e in ['free', 'used', 'total']})
+        return bal
+
     def __init__(self, conf: config.Config = None, exchange=gv.defEXCHANGE):
+        # TODO : the desk doesnt need to access all the config + the exchange string. Only the section of one exchange (and the defaults).
         self.config = conf if conf is not None else config.Config()
         self.exchangeName = (exchange or gv.defEXCHANGE)
         exgData = gv.exchange_data[self.exchangeName] #TODO check existance
         exgConfig = dataclasses.asdict(self.config.sections[exgData['confSection']])
         # Requesting Key from initialization
+        # TODO : remove that to allow anonymous user to retrieve data.
         exgConfig.update({
             'apiKey': self.config.sections[exgData['confSection']].apiKey,
             'secret': self.config.sections[exgData['confSection']].secret,
@@ -41,14 +69,11 @@ class Desk(object):
         self.exchange = getattr(ccxt, exgData['ccxtName'])(exgConfig) #TODO check exchange id existing in CCXT
         if 'test' in exgData and exgData['test']:
             self.exchange.urls['api'] = self.exchange.urls['test']  #switch the base URL to test net url
-        
-        self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
+        self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
         self.capital = capital.Capital(self.exchange)
         self.capital.update()
-
-
 
     def do_getExchangeInfo(self):
         filename = 'exg_' + gv.exchange_data[self.exchangeName]['confSection'] + '.txt'
