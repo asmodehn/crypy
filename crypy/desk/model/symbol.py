@@ -45,6 +45,7 @@ class Fiat(Currency):
     USD= 'USD'
     CAD= 'CAD'
     KRW= 'KRW'
+    JPY= 'JPY'
 
 
 class Crypto(Currency):
