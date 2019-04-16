@@ -6,16 +6,9 @@ import typing
 import pandas
 from pydantic.dataclasses import dataclass
 from pydantic import validator
-from dataclasses import field
 from .errors import CrypyException
-from .bounded_price import BoundedPrice, BoundedPriceError
-from .bounded_amount import BoundedAmount, BoundedAmountError
-from .bounded_cost import BoundedCost, BoundedCostError
-from .symbol import Symbol, SymbolError
-from .ticker import Ticker, TickerError
-
-from datetime import datetime
-import dateutil.parser
+from .model.symbol import Symbol
+from .ticker import Ticker
 
 from .impl.mpmath import MPFloat, MPFuzzyFloat, MPBoundedFloat, MPBoundedFuzzyFloat
 
