@@ -8,7 +8,7 @@ import typing
 try:
     from .symbol import Currency
 except (ImportError, ValueError, ModuleNotFoundError):
-    from .symbol import Currency
+    from crypy.desk.model.symbol import Currency
 
 
 @dataclass(frozen=True)  # prevent accidental change

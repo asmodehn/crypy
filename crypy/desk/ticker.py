@@ -17,7 +17,7 @@ except (ImportError, ValueError):
 
 try:
     from . import errors, limiter
-    from crypy.desk.model.symbol import Symbol
+    from .model.symbol import Symbol
 except ImportError:
     from crypy.desk import errors, limiter
     from crypy.desk.model.symbol import Symbol
