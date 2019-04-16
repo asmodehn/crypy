@@ -17,7 +17,8 @@ except (ImportError, ValueError):
     from crypy import config
 
 try:
-    from .. import errors, bounds, limiter, exchange, market, symbol, ticker
+    from .. import errors, bounds, limiter, exchange, market, ticker
+    from desk.model import symbol
     #from ..precision import Precision  # solving forward ref errors for pydantic
 except (ImportError, ValueError):
     from crypy.desk import errors, bounds, limiter, exchange, market, symbol, ticker
