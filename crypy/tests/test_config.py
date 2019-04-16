@@ -1,14 +1,18 @@
 import pytest
 
 
-def test_locate():
+"""
+Module testing the config module.
+This is tricky to test because of the integration with the surrounding environment and file system...
+"""
+
+
+def test_exchange_section():
     pass
+
 
 def test_config():
     pass
-
-
-
 
 
 if __name__ == '__main__':

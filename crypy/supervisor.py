@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 A supervisor class, to be used in an async context.
 One supervisor manages one exchange and its traders
@@ -8,7 +10,22 @@ from typing import List
 
 import trio
 from .exchange import Exchange, Kraken, Bad
-from .currency import Currency
+
+
+class Currency:
+    """ Specific object to manipulate currency properly, as a measure unit"""
+
+    def __init__(self, identifier: str) -> None:
+        self.identifer = identifier
+
+
+    def __repr__(self):
+        return self.identifer
+
+
+    def __str__(self):
+        return self.identifer
+
 
 
 class Supervisor:
