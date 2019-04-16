@@ -6,9 +6,9 @@ from dataclasses import dataclass
 import typing
 
 try:
-    from desk.model.symbol import Currency
+    from .symbol import Currency
 except (ImportError, ValueError, ModuleNotFoundError):
-    from desk.model.symbol import Currency
+    from .symbol import Currency
 
 
 @dataclass(frozen=True)  # prevent accidental change

@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import typing
 from pydantic.dataclasses import dataclass
-from dataclasses import field
-from datetime import datetime
-import dateutil.parser
 
 import pandas
 
@@ -20,10 +17,10 @@ except (ImportError, ValueError):
 
 try:
     from . import errors, limiter
-    from .symbol import Symbol
+    from crypy.desk.model.symbol import Symbol
 except ImportError:
     from crypy.desk import errors, limiter
-    from crypy.desk.symbol import Symbol
+    from crypy.desk.model.symbol import Symbol
 
 
 class TickerError(errors.CrypyException):
