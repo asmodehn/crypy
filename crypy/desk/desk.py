@@ -25,7 +25,7 @@ try:
 except (ImportError, ValueError, ModuleNotFoundError):
     from crypy.euc import ccxt
     from crypy import config
-    from desk.model.balance import BalanceAll
+    from crypy.desk.model.balance import BalanceAll
     from crypy.desk.symbol import Symbol, SymbolError
     from crypy.desk.market import Market, MarketError
 
