@@ -28,7 +28,7 @@ class Capital:
         self.balance = self.desk.balance
         return self
 
-    def do_status(self, ticker = None):
+    def getStatus(self, ticker = None):
         """
         Return capital status for a specific ticker or all
         Format TBD
@@ -36,7 +36,7 @@ class Capital:
         """
         pass
 
-    def do_tradableAmount(self, ticker = None):
+    def getTradableAmount(self, ticker = None):
         """
         Return tradable amount for a ticker or default amount if not specified.
         Depending on Capital Management strategy
@@ -44,7 +44,7 @@ class Capital:
         """
         pass
 
-    def do_getBalance(self, ticker = None, tf = None):
+    def getBalance(self, ticker = None, tf = None):
         """
         Return beautified balance
         For a specific ticker if defined or all (default)
@@ -60,5 +60,8 @@ class Capital:
         """
         pass
 
-    def getCapital(self, value, ticker):
+    def getCapital(self, mount, ticker):
+        """
+        Get capital amount for a ticker in update internal knowledge
+        """
         pass
