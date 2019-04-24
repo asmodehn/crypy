@@ -6,7 +6,6 @@ import os
 import sys
 
 import click
-from click_repl import repl as crepl
 import prompt_toolkit
 
 #from dataclasses import asdict
@@ -47,8 +46,6 @@ def cli_root_group(ctx, exchange):
 
     # starting repl if no command passed
     if ctx.invoked_subcommand is None:
-
-        ctx.exchangeName = exchange  # will be available from ctx.parent.exchangeName after repl launched
         crepl = repl.start_repl(ctx, exchange)
 
     # otherwise invoke the specified subcommand (default behavior)
