@@ -134,19 +134,37 @@ class Desk:
             return f"invalid argument(s) when calling {ccxtMethod}(). Internal error: {error.args[0]}"
 
     def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
+        #NB: this fetch OHLCV from the start of the exchange pair on Mex
+        
+        #TODO handle supported exchanges.timeframes
+
+        #NB: the "since" param has precedence over the "limit" one (which is just a max)
+        #So if we want to have the "full" limit backward from the current time we need to compute a since value from $now, otherwise will only get the latest candle
+        if since is None and limit is not None:
+            since = self.exchange.milliseconds() - gv.tf2second[timeframe]*1000 * limit #datetimes and timestamps https://github.com/ccxt/ccxt/wiki/Manual#working-with-datetimes-and-timestamps
+        elif since is not None: #we need to format it to a ms timestamp
+            import pytz, datetime
+            #Datetime ops https://www.programiz.com/python-programming/datetime
+            #Format: https://www.programiz.com/python-programming/datetime/strftime
+            #TimeZone: https://pypi.org/project/pytz/
+            parisTZ = pytz.timezone("Europe/Paris")
+            since = parisTZ.localize(since)
+            since = since.astimezone(pytz.utc)
+            since = since.timestamp() * 1000 #timestamp in millisecond
+
         #Get data
-        tohlcv = self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, since = since, limit = limit, params = customParams) #, since = (exg.seconds()-since)
+        tohlcv = self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, since = since, limit = limit, params = customParams)
         if isinstance(tohlcv, str): #handle return in error
             return tohlcv
 
         #format data into a list
-        # initialize a list to store the parsed ohlc data
+        #initialize a list to store the parsed ohlc data
         tohlcvlist = []
 
         for period in tohlcv:
             # Initialize an OrderedDict to garantee the column order
             tohlcvdict = dict()
-            tohlcvdict["CloseTime"] = formatTS(period[0])
+            tohlcvdict["CloseTimeUTC"] = formatTS(period[0])
             tohlcvdict["Open"] = period[1]
             tohlcvdict["High"] = period[2]
             tohlcvdict["Low"] = period[3]

@@ -6,12 +6,11 @@ import os
 import sys
 
 import click
+from click_datetime import Datetime
 import prompt_toolkit
 
 #from dataclasses import asdict
 #from collections import OrderedDict
-
-import datetime
 
 import crypy.desk.global_vars as gv
 
@@ -187,7 +186,7 @@ def orderbook(ctx, limit):
     print( Order.fetchL2OrderBook(desk = desk, symbol = gv.ticker2symbol[desk.ticker], limit = limit) )
 
 @order_group.command()
-@click.option('-s', '--since', type=datetime, show_default=True)
+@click.option('-s', '--since', type=Datetime(format='%Y-%m-%d'), show_default=True)
 @click.option('-l', '--limit', type=int, default=25, show_default=True)
 @click.pass_context
 def last_trades(ctx, since, limit):
@@ -197,13 +196,14 @@ def last_trades(ctx, since, limit):
     print( desk.do_fetchTrades(symbol = gv.ticker2symbol[desk.ticker], since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
 @order_group.command()
-@click.option('-tf', '--timeframe', default='1m', type=click.Choice(['1m', '3m', '15m', '30m', '1h', '2H', '4H', '6H', '12H', '1D', '3D', '1W', '1M']), show_default=True, help="timeframe in minutes") #TODO choices must depend on exchange i suppose
-@click.option('-s', '--since', type=datetime, show_default=True)
-@click.option('-l', '--limit', type=int, default=50, show_default=True)
+#@click.option('-tf', '--timeframe', default='1m', type=click.Choice(['1m', '3m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d', '3d', '1w', '1M']), show_default=True, help="timeframe in minutes") #TODO choices must depend on desk.exchange.timeframes
+@click.option('-tf', '--timeframe', default='1m', type=click.Choice(['1m', '5m', '1h', '1d']), show_default=True, help="valid timeframe for exchange") 
+@click.option('-s', '--since', type=Datetime(format='%Y-%m-%d'), show_default=True)
+@click.option('-l', '--limit', type=int, default=50, show_default=True) #TODO max it
 @click.pass_context
 def ohlcv(ctx, timeframe, since, limit):
     """
-    Pair: OHLCV data for interval in minutes
+    Pair: OHLCV data for timeframe interval
     """
     #print(gv.ticker2symbol[ctx.obj.ticker])
     print(desk.do_fetchOHLCV(symbol = gv.ticker2symbol[desk.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
