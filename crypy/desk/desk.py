@@ -130,13 +130,14 @@ class Desk:
 
         except ccxt.BaseError as error:
             return error.args[0]
-        except TypeohlcvError as error:
+        except TypeError as error:
             return f"invalid argument(s) when calling {ccxtMethod}(). Internal error: {error.args[0]}"
 
     def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
         #Get data
-        tohlcv = self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, limit = limit, params = customParams) #, since = (exg.seconds()-since)
-        #TODO handle exception in return
+        tohlcv = self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, since = since, limit = limit, params = customParams) #, since = (exg.seconds()-since)
+        if isinstance(tohlcv, str): #handle return in error
+            return tohlcv
 
         #format data into a list
         # initialize a list to store the parsed ohlc data
