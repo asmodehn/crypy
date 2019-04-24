@@ -206,7 +206,7 @@ def ohlcv(ctx, timeframe, since, limit):
     Pair: OHLCV data for interval in minutes
     """
     #print(gv.ticker2symbol[ctx.obj.ticker])
-    print(desk.do_fetchOHLCV(symbol = gv.ticker2symbol[ctx.obj.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
+    print(desk.do_fetchOHLCV(symbol = gv.ticker2symbol[desk.ticker], timeframe = timeframe, since = since, limit = limit, customParams = {}) ) #todo customparams for exchange if needed
 
 @order_group.command()
 @click.pass_context

@@ -130,7 +130,7 @@ class Desk:
 
         except ccxt.BaseError as error:
             return error.args[0]
-        except TypeError as error:
+        except TypeohlcvError as error:
             return f"invalid argument(s) when calling {ccxtMethod}(). Internal error: {error.args[0]}"
 
     def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
