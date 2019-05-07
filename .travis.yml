@@ -1,0 +1,22 @@
+dist: xenial
+language: python
+
+branches:
+  except:
+    - gh-pages
+
+python:
+  - '3.5'
+  - '3.6'
+  - '3.7'
+
+
+install:
+  - pipenv install
+
+script:
+  - python -m crypy.desk.impl.tests
+
+notifications:
+  email: false
+

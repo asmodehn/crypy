@@ -27,7 +27,6 @@ ptterm = "*"
 black = "*"
 pydantic = "*"
 hypothesis = "*"
-mpmath = "*"
 structlog = "*"
 #parameterized = "*"
 
