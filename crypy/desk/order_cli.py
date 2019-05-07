@@ -66,8 +66,28 @@ def make_order(ticker, order_type, expiracy, id = None, amount = None, price = N
         global desk
         symbol = gv.ticker2symbol[ticker]
 
-        order = Order(exchange = desk.exchange, symbol=symbol, side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
-        
+
+        ### ID handling ###
+        if id is None:
+            if not 'createOrder' in desk.exchange.has or not desk.exchange.has['createOrder']:
+                return f'createOrder() not available for this exchange'
+
+        else:
+            if not 'editOrder' in desk.exchange.has or not desk.exchange.has['editOrder']:
+                return f'editOrder() not available for this exchange'
+
+        ### TYPE handling ###
+        if order_type in ['Market', 'Limit']:
+            #if self.data['leverage'] > 1:
+            #set leverage in call cases, working on bitmex, check other exchanges
+            if not hasattr(desk.exchange, 'privatePostPositionLeverage'):
+                return f'privatePostPositionLeverage() not available for this exchange'
+
+        order = Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
+                      display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value,
+                      peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount,
+                      price=price)
+
         orderValidation = order.format(marketPrice = desk.do_fetchMarketPrice(symbol = symbol))
         if orderValidation is not None:
             return orderValidation
@@ -80,7 +100,7 @@ def make_order(ticker, order_type, expiracy, id = None, amount = None, price = N
         order.showData()
 
         if click.confirm('Please confirm' + ( ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if (not leverage is None and leverage > 1) else '')): #abort (but don't die!) here if No is selected (default) otherwise continue code below
-            return order.execute()
+            return desk.execute(order)
         else:
             return "order execution aborted"
 
@@ -172,7 +192,7 @@ def cancel_order(ctx, ids):
     """
     Pair: cancel order(s)
     """
-    Order.cancel(exchange=desk.exchange, order_ids=ids)
+    desk.cancel(order_ids=ids)
 
 #TODO cancel all orders
 

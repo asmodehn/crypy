@@ -2,8 +2,7 @@ import unittest
 #https://docs.python.org/3/library/unittest.mock.html
 # https://docs.pytest.org/en/latest/unittest.html
 
-import crypy.desk.global_vars as gv #TODO Validate it first
-from crypy.desk.desk import Desk #TODO Validate it first
+import crypy.desk.global_vars as gv  #TODO Validate it first
 from crypy.desk.order import Order
 from crypy.config import resolve, ExchangeSection
 
@@ -18,23 +17,14 @@ class TestOrder(unittest.TestCase):
     exchangeName = "testnet.bitmex" #TODO temp in the ne d will need to very all exchanges
     ticker = 'BTCUSD' #TODO temp in the ne d will need to very all traded pair for the exchange
 
-    desk = Desk(ExchangeSection(
-        name="testnet.bitmex",
-        credentials_file=resolve('testnet.bitmex.key'),
-        impl_hook="impl= ccxt.bitmex(config); impl.urls['api'] = impl.urls['test']",
-    ))
-
-    exchange = desk.exchange
     #marketPrice = desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])
-    marketPrice = { 'bid': 4000, 'ask': 4001, 'spread': 1 }
+    marketPrice = {'bid': 4000, 'ask': 4001, 'spread': 1}
 
     ### defaults ###
-    ticker = 'BTCUSD'
     side = 'buy' #TODO TEST others
     order_type = 'Limit' #TODO TEST others
     leverage = 25
     display_qty = None #TODO TEST others
-    id = None #TODO TEST w & wo
     amount = None
     price = None
     peg_offset_value = None
@@ -43,25 +33,10 @@ class TestOrder(unittest.TestCase):
     exec_inst = None
     expiracy = None
 
-    def test_Exchange(self):
-        ccxtExchangeNeededMethods = [
-            'createMarketOrder',
-            'createOrder',
-            'editOrder',
-            'privatePostPositionLeverage',
-            'cancelOrder',
-            'fetchL2OrderBook'
-        ]
-        #TODO test 'do_fetchMarketPrice' exists on desk
-
-        for ccxtMethod in ccxtExchangeNeededMethods:
-            if ccxtMethod not in self.exchange.has or not self.exchange.has[ccxtMethod]: #ccxt unified method check
-                if not hasattr(self.exchange, ccxtMethod): #ccxt implicit (not unified) method check
-                    self.fail( msg =  f'{ccxtMethod}() not available for this exchange' )
 
     def test_LimitLong(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id = order_id):
                 side = 'buy'
                 type = 'Limit'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -70,7 +45,6 @@ class TestOrder(unittest.TestCase):
                 mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -81,7 +55,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = self.exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = price
                 )
@@ -102,11 +76,11 @@ class TestOrder(unittest.TestCase):
                     'side': side,
                     'symbol': symbol,
                     'type': type
-                }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
+                }, **({} if order_id is None else {'id' : order_id}) }, 'invalid order to execute'
 
     def test_LimitShort(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'sell'
                 type = 'Limit'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -115,7 +89,6 @@ class TestOrder(unittest.TestCase):
                 mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -126,7 +99,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = self.exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = price
                 )
@@ -148,11 +121,11 @@ class TestOrder(unittest.TestCase):
                     'side': side,
                     'symbol': symbol,
                     'type': type
-                }, **({} if id is None else {'id': id})}, 'invalid order to execute'
+                }, **({} if order_id is None else {'id': order_id})}, 'invalid order to execute'
 
     def test_MarketLong(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'buy'
                 type = 'Market'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -162,7 +135,6 @@ class TestOrder(unittest.TestCase):
                 mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = currentPrice)
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -173,7 +145,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = self.exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = price
                 )
@@ -194,11 +166,11 @@ class TestOrder(unittest.TestCase):
                     'side': side,
                     'symbol': symbol,
                     'type': type
-                }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
+                }, **({} if order_id is None else {'id' : order_id}) }, 'invalid order to execute'
 
     def test_MarketShort(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'sell'
                 type = 'Market'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -208,7 +180,6 @@ class TestOrder(unittest.TestCase):
                 mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = currentPrice)
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -219,7 +190,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = self.exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = price
                 )
@@ -239,11 +210,11 @@ class TestOrder(unittest.TestCase):
                     'price': price,
                     'side': side,
                     'symbol': symbol,
-                    'type': type}, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
+                    'type': type}, **({} if order_id is None else {'id' : order_id}) }, 'invalid order to execute'
 
     def test_StopBuy(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'buy'
                 type = 'Market'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -256,7 +227,6 @@ class TestOrder(unittest.TestCase):
                 returned_exec_inst = 'IndexPrice'
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -267,7 +237,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = self.exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = price
                 )
@@ -287,11 +257,11 @@ class TestOrder(unittest.TestCase):
                     },
                     'side': side,
                     'symbol': symbol,
-                    'type': returnedType}, **({} if id is None else {'id' : id})}, 'invalid order to execute'
+                    'type': returnedType}, **({} if order_id is None else {'id' : order_id})}, 'invalid order to execute'
 
     def test_StopSell(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'sell'
                 type = 'Market'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -304,7 +274,6 @@ class TestOrder(unittest.TestCase):
                 returned_exec_inst = 'IndexPrice'
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -315,7 +284,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = self.exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = price
                 )
@@ -336,11 +305,11 @@ class TestOrder(unittest.TestCase):
                     'side': side,
                     'symbol': symbol,
                     'type': returnedType
-                }, **({} if id is None else {'id' : id})}, 'invalid order to execute'
+                }, **({} if order_id is None else {'id' : order_id})}, 'invalid order to execute'
 
     def test_TakeProfitBuy(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'buy'
                 type = 'Market'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -353,7 +322,6 @@ class TestOrder(unittest.TestCase):
                 returned_exec_inst = 'IndexPrice'
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -364,7 +332,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = self.exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = price
                 )
@@ -384,11 +352,11 @@ class TestOrder(unittest.TestCase):
                     },
                     'side': side,
                     'symbol': symbol,
-                    'type': returnedType}, **({} if id is None else {'id' : id})}, 'invalid order to execute'
+                    'type': returnedType}, **({} if order_id is None else {'id' : order_id})}, 'invalid order to execute'
 
     def test_TakeProfitSell(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'sell'
                 type = 'Market'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -401,7 +369,6 @@ class TestOrder(unittest.TestCase):
                 returned_exec_inst = 'IndexPrice'
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -412,7 +379,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = self.exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = price
                 )
@@ -433,11 +400,11 @@ class TestOrder(unittest.TestCase):
                     'side': side,
                     'symbol': symbol,
                     'type': returnedType
-                }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
+                }, **({} if order_id is None else {'id' : order_id}) }, 'invalid order to execute'
 
     def test_Stop(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'buy' #TODO other side
                 type = 'Stop'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -452,7 +419,6 @@ class TestOrder(unittest.TestCase):
                 returned_exec_inst = exec_inst
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -463,7 +429,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = self.price
                 )
@@ -485,11 +451,11 @@ class TestOrder(unittest.TestCase):
                     'side': side,
                     'symbol': symbol,
                     'type': returned_type
-                }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
+                }, **({} if order_id is None else {'id' : order_id}) }, 'invalid order to execute'
 
     def test_TakeProfit(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'sell' #TODO other side
                 type = 'MarketIfTouched'
                 symbol = gv.ticker2symbol[self.ticker]
@@ -504,7 +470,6 @@ class TestOrder(unittest.TestCase):
                 returned_exec_inst = exec_inst
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -515,7 +480,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = self.peg_price_type,
                     exec_inst = exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = self.price
                 )
@@ -537,11 +502,11 @@ class TestOrder(unittest.TestCase):
                     'side': side,
                     'symbol': symbol,
                     'type': returned_type
-                }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
+                }, **({} if order_id is None else {'id' : order_id}) }, 'invalid order to execute'
 
     def test_TrailingStop(self):
-        for msg, id in params:
-            with self.subTest(msg = msg, id =  None):
+        for msg, order_id in params:
+            with self.subTest(msg = msg, order_id =  order_id):
                 side = 'buy' #TODO other side
                 type = 'Pegged'
                 peg_price_type = 'TrailingStopPeg'
@@ -558,7 +523,6 @@ class TestOrder(unittest.TestCase):
                 returned_exec_inst = exec_inst
 
                 order = Order(
-                    exchange = self.exchange,
                     symbol = symbol,
                     side = side,
                     type = type,
@@ -569,7 +533,7 @@ class TestOrder(unittest.TestCase):
                     peg_price_type = peg_price_type,
                     exec_inst = exec_inst,
                     expiracy = self.expiracy,
-                    id = id,
+                    id = order_id,
                     amount = amount,
                     price = self.price
                 )
@@ -591,33 +555,8 @@ class TestOrder(unittest.TestCase):
                     'side': side,
                     'symbol': symbol,
                     'type': returned_type
-                }, **({} if id is None else {'id' : id}) }, 'invalid order to execute'
+                }, **({} if order_id is None else {'id' : order_id}) }, 'invalid order to execute'
 
 
-    @unittest.skip(reason="Not implemented")
-    def test_Cancel(self):
-        #Nothing specific to test atm except execution
-        pass
-
-
-    @unittest.skip(reason="Not implemented")
-    def test_CancelAll(self):
-        #Method not done yet
-        pass
-
-
-    @unittest.skip(reason="Not implemented")
-    def test_fetchL2OrderBook(self):
-        #Nothing specific to test atm except execution
-        pass
-
-    @unittest.skip(reason="Not implemented")
-    def test_execute(self):
-        #Nothing specific to test atm except execution
-        #order.execute()
-        pass
-
-    
 if __name__ == '__main__':
-    import pytest
-    pytest.main(['-s', __file__])
+    unittest.main()

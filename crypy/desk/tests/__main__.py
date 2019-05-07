@@ -2,6 +2,7 @@ import unittest
 
 # import your test modules
 from . import test_errors
+from . import test_order
 
 # initialize the test suite
 loader = unittest.TestLoader()
@@ -12,6 +13,7 @@ private_suite = unittest.TestSuite()
 
 # add tests to the test suite
 public_suite.addTests(loader.loadTestsFromModule(test_errors))
+public_suite.addTests(loader.loadTestsFromModule(test_order))
 
 # initialize a runner, pass it your suite and run it
 runner = unittest.TextTestRunner(verbosity=3)

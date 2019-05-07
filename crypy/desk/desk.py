@@ -7,10 +7,12 @@ import json
 
 try:
     from . import capital
+    from . import order
     import global_vars as gv
 except (ImportError, ValueError, ModuleNotFoundError):
     import crypy.desk.global_vars as gv
     from crypy.desk import capital
+    from crypy.desk import order
 
 from .utils import formatTS
 
@@ -28,6 +30,13 @@ except (ImportError, ValueError, ModuleNotFoundError):
     from crypy.desk.model.symbol import Symbol, SymbolError
     from crypy.desk.market import Market, MarketError
 
+
+
+import structlog
+filename = 'desk.log'
+file = open( filename, 'a') #TODO where do we close it
+#structlog.configure( logger_factory=structlog.PrintLogger(file = file) )
+logger = structlog.PrintLogger(file = file)
 
 class Desk:
 
@@ -202,4 +211,50 @@ class Desk:
         ask = orderbook['asks'][0][0] if len (orderbook['asks']) > 0 else None
         spread = (ask - bid) if (bid and ask) else None
         return { 'bid': bid, 'ask': ask, 'spread': spread }
+
+    def execute(self, ordr: order.Order):
+        try:
+            # first handle the leverage (NB: it changes leverage of existing orders too!)
+            # NB: we do it here coz we cant the leverage value to be visible when showing data
+            leverage = ordr.data['leverage']
+            if leverage is not None:
+                response2 = self.exchange.privatePostPositionLeverage(
+                    {"symbol": self.exchange.markets[ordr.data['symbol']]['id'], "leverage": leverage})
+                logger.msg(str(response2))
+            del ordr.data['leverage']  # remove the leverage from the order data coz createOrder() doesnt handle it
+
+            # second post/update order
+            if 'id' not in ordr.data:
+                response = self.exchange.createOrder(**dict(ordr.data))
+            else:
+                response = self.exchange.editOrder(**dict(ordr.data))
+
+            logger.msg(str(response))
+
+            return 'order_id: ' + response['id']
+
+        except ccxt.BaseError as error:
+            return error.args[0]
+        except Exception as error:
+            return "Error: " + str(type(error)) + " " + str(error)
+
+    def cancel(self, order_ids):
+        if not 'cancelOrder' in self.exchange.has or not self.exchange.has['cancelOrder']:
+            return f'cancelOrder() not available for this exchange'
+
+        for order_id in order_ids:
+            try:
+                self.exchange.cancelOrder(order_id)
+                print(f'order(s) {order_id} canceled')
+                #TODO remove from order log also
+            except ccxt.NetworkError as err:
+                #TODO retry cancelation
+                pass
+            except ccxt.ValidationError as err:
+                print(f'order(s) {order_id} invalid: bad length, cancel failed')
+            except ccxt.OrderNotFound as err:
+                print(f'order(s) {order_id} not found: already canceled/closed or invalid order id, cancel failed')
+            except ccxt.BaseError as error:
+                print(f'order(s) {order_id} not found invalid order id or something else, cancel failed')
+                print(error.args[0])
 

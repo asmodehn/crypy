@@ -1,29 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import structlog
-filename = 'log.txt'
-file = open( filename, 'a') #TODO where do we close it
-#structlog.configure( logger_factory=structlog.PrintLogger(file = file) )
-logger = structlog.PrintLogger(file = file)
-
 
 try:
     from ..euc import ccxt
 except (ImportError, ValueError, ModuleNotFoundError):
     from crypy.euc import ccxt
 
-class Order():
+
+class Order:
     """
     Order class WIP
     abstract
     """
 
-    def __init__(self, exchange, side, symbol, type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, amount, price, id = None):
+    def __init__(self, side, symbol, type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, amount, price, id = None):
         #TODO(future): Note, that some exchanges will not accept market orders (they only allow limit orders).
-        #if exchange.has['createMarketOrder']:
-
-        self.exchange = exchange
 
         self.data = {
             'symbol' : symbol,
@@ -32,7 +24,6 @@ class Order():
             'amount' : amount,
             'price' : price,
             'leverage': leverage,
-            'id': id,
             'params' : {
                 'stopPx': stop_px,
                 "execInst" : exec_inst,
@@ -42,29 +33,15 @@ class Order():
              }
         }
 
+        if id is not None:
+            self.data['id'] = id
+
+
     def format(self, marketPrice):
         #TODO error handling
-
-        ### ID handling ###
-        orderId = self.data['id']
-        if orderId is None:
-            if not 'createOrder' in self.exchange.has or not self.exchange.has['createOrder']:
-                return f'createOrder() not available for this exchange'
-            del self.data['id'] #remove the id from the order data coz createOrder() doesnt handle it
-        else:
-            if not 'editOrder' in self.exchange.has or not self.exchange.has['editOrder']:
-                return f'editOrder() not available for this exchange'
-
-            #TODO check side of new and old orders (aka when an id is present) are the same, otherwise ccxt error (mex: immediate liquidation error)
-        ### end ID handling ###
-
             
         ### TYPE handling ###
         if self.data['type'] in ['Market', 'Limit']:
-            #if self.data['leverage'] > 1:
-            #set leverage in call cases, working on bitmex, check other exchanges
-            if not hasattr(self.exchange, 'privatePostPositionLeverage'):
-                return f'privatePostPositionLeverage() not available for this exchange'
 
             if self.data['type'] == 'Market': #market order
 
@@ -132,52 +109,6 @@ class Order():
                     print(f"    • {subKey}: {subValue}")
             else:
                 print(f" ○ {key}: {value}")
-
-    def execute(self):
-        try:
-            #first handle the leverage (NB: it changes leverage of existing orders too!)
-            #NB: we do it here coz we cant the leverage value to be visible when showing data
-            leverage = self.data['leverage']
-            if leverage is not None:
-                response2 = self.exchange.privatePostPositionLeverage({"symbol": self.exchange.markets[self.data['symbol']]['id'], "leverage": leverage})
-                logger.msg(str(response2))
-            del self.data['leverage'] #remove the leverage from the order data coz createOrder() doesnt handle it
-
-            #second post/update order
-            if 'id' not in self.data:
-                response = self.exchange.createOrder(**dict(self.data))
-            else:
-                response = self.exchange.editOrder(**dict(self.data))
-                
-            logger.msg(str(response))
-
-            return 'order_id: ' + response['id']
-
-        except ccxt.BaseError as error:
-            return error.args[0]
-        except Exception as error:
-            return "Error: " + str(type(error)) + " " + str(error)
-
-    @staticmethod
-    def cancel(exchange, order_ids):
-        if not 'cancelOrder' in exchange.has or not exchange.has['cancelOrder']:
-            return f'cancelOrder() not available for this exchange'
-
-        for order_id in order_ids:
-            try:
-                exchange.cancelOrder(order_id)
-                print(f'order(s) {order_id} canceled')
-                #TODO remove from order log also
-            except ccxt.NetworkError as err:
-                #TODO retry cancelation
-                pass
-            except ccxt.ValidationError as err:
-                print(f'order(s) {order_id} invalid: bad length, cancel failed')
-            except ccxt.OrderNotFound as err:
-                print(f'order(s) {order_id} not found: already canceled/closed or invalid order id, cancel failed')
-            except ccxt.BaseError as error:
-                print(f'order(s) {order_id} not found invalid order id or something else, cancel failed')
-                print(error.args[0])
 
     @staticmethod
     def fetchL2OrderBook(desk, symbol, limit):
