@@ -12,7 +12,7 @@ python:
 
 
 install:
-  - pipenv install
+  - pipenv install --pre
 
 script:
   - python -m crypy.desk.impl.tests
