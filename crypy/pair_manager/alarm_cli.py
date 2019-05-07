@@ -10,9 +10,9 @@ from .pair_manager_cli import cli_root_group
 manager = None
 
 ### CLI Alarm Sub Commands
-@cli_root_group.group('alarm')
+@cli_root_group.group('alarm', invoke_without_command=True)
 @click.pass_context
-def alarm_group(ctx):
+def alarm_group(ctx, id = None):
     """
     Managing Alarms for the pair
     """
@@ -21,10 +21,38 @@ def alarm_group(ctx):
     if manager is None:
         manager = ctx.obj['manager']
 
+    #NO subcommand, we want to create/update an alarm
+    if ctx.invoked_subcommand is None:
+        alarm = Alarm(manager)
+
+        if id is None:
+            click.echo(f'Do you want to create the following alarm on {manager.symbol} ?')
+        else:
+            click.echo(f'Do you want to update the following alarm on {manager.symbol} ?')
+
+        print(alarm.definition)
+
+        if click.confirm('Please confirm'): #abort (but don't die!) here if No is selected (default) otherwise continue code below
+            print(alarm.execute())
+        else:
+            print("alarm creation aborted")
+
+    else: #there is a subcommand -> run it
+        pass
+
+
 @alarm_group.command()
 @click.pass_context
-def info(ctx):
+def list(ctx):
     """
+    TODO list alarms, maybe goes into pair_manager directly?
     """
-    alarm = Alarm(manager)
-    print(alarm.info())
+    print("manager.alarmList() TODO")
+
+@alarm_group.command()
+@click.pass_context
+def cancel(ctx):
+    """
+    TODO cancel alarm, maybe goes into pair_manager directly?
+    """
+    print("TODO")

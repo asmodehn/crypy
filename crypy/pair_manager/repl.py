@@ -23,17 +23,18 @@ from prompt_toolkit.styles import Style
 
 # TODO : https://python-prompt-toolkit.readthedocs.io/en/stable/pages/tutorials/repl.html
 
-def start_repl(ctx, exchange):
+def start_repl(ctx, exchange, ticker):
 
     prompt_toolkit.shortcuts.clear()
     click.echo(f"-== PAIR MANAGER CLI ==-")
     click.echo(f"EXCHANGE: {exchange}")
+    click.echo(f"PAIR TICKER: {ticker}")
     # ctx.invoke(help) #TODO invoke help cmd on startup
 
     # Setup the prompt
     # https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
     prompt_kwargs = {
-        'message': f"{exchange}> ",
+        'message': f"{exchange}-{ticker}> ",
         'history': prompt_toolkit.history.FileHistory(os.path.join(sys.path[0], 'crypy.hist')),
         # TODO don't use os.path
         'auto_suggest': prompt_toolkit.auto_suggest.AutoSuggestFromHistory(),

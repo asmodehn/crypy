@@ -25,18 +25,21 @@ config = crypy.config.Config()
 ### CLI Commands (Root)
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('-e', '--exchange', default=gv.defEXCHANGE, type=click.Choice(config.sections.keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
+@click.option('-t', '--ticker', default=gv.defPAIR, type=str, show_default=True)  #TODO define valid pair tickers per exchange
 @click.pass_context
-def cli_root_group(ctx, exchange):
+def cli_root_group(ctx, exchange, ticker):
     #ensure that ctx.obj exists and is a dict
     ctx.ensure_object(dict)
+
+    #TODO use Desk instead of exchange
 
     global manager
     if manager is None:
         exchange_config = config.sections[exchange]
-        manager = ctx.obj['manager'] = ctx.obj.get('manager', Manager(conf=exchange_config))
+        manager = ctx.obj['manager'] = ctx.obj.get('manager', Manager(conf=exchange_config, ticker = ticker))
     # starting repl if no command passed
     if ctx.invoked_subcommand is None:
-        crepl = repl.start_repl(ctx, exchange)
+        crepl = repl.start_repl(ctx, exchange, ticker)
 
     # otherwise invoke the specified subcommand (default behavior)
 

@@ -2,11 +2,10 @@
 # coding: utf-8
 import typing
 
-import json
+#import json
+#from ..desk.utils import formatTS
 
-
-
-from ..desk.utils import formatTS
+import crypy.desk.global_vars as gv
 
 from .position_manager import Position_Manager
 import strategy
@@ -22,11 +21,18 @@ except (ImportError, ValueError, ModuleNotFoundError):
 class Manager:
 
 
-    def __init__(self, conf: config.ExchangeSection = None):
+    def __init__(self, conf: config.ExchangeSection = None, ticker = gv.defPAIR):
+        
+        #TODO use Desk instead of exchange
+
         self.exchangeName = conf.name
 
         # Using the impl_hook from settings.ini
         self.exchange = conf.exec_hook(ccxt=ccxt)
 
+        self.symbol = gv.ticker2symbol[ticker]
+
+        self.alarms = []
+
     def info(self):
-        return f"Trade Manager for {self.exchangeName} WIP"
+        return f"Trade Manager for  {self.symbol} on {self.exchangeName} WIP"
