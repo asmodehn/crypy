@@ -16,6 +16,8 @@ install:
 script:
   - python -m crypy.desk.impl.tests
   - python -m crypy.desk.model.tests
+  - python -m crypy.desk.tests
+  - python -m crypy.tests
 
 notifications:
   email: false
