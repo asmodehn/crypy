@@ -6,7 +6,7 @@ import json
 
 
 try:
-    from desk import capital
+    from . import capital
     import global_vars as gv
 except (ImportError, ValueError, ModuleNotFoundError):
     import crypy.desk.global_vars as gv
