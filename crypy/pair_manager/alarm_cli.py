@@ -2,6 +2,7 @@ import click
 import prompt_toolkit
 
 import crypy.desk.global_vars as gv
+from crypy.desk.errors import CrypyException
 
 from .alarm import Alarm
 from .pair_manager_cli import cli_root_group
@@ -16,7 +17,6 @@ def alarm_group(ctx, id = None):
     """
     Managing Alarms for the pair
     """
-    click.echo(f"Alarms")
     global manager
     if manager is None:
         manager = ctx.obj['manager']
@@ -45,14 +45,26 @@ def alarm_group(ctx, id = None):
 @click.pass_context
 def list(ctx):
     """
-    TODO list alarms, maybe goes into pair_manager directly?
+    list alarms
     """
-    print(manager.listAlarms());
+    print(manager.alarmsList());
 
 @alarm_group.command()
 @click.pass_context
 def cancel(ctx):
     """
-    TODO cancel alarm, maybe goes into pair_manager directly?
+    cancel alarm
     """
-    print("TODO")
+    id = 0 #TODO get id from cli
+    try: 
+        print(f"Cancel the following alarm: {manager.alarmShow(id)} ?")
+
+        if click.confirm('Please confirm'): #abort (but don't die!) here if No is selected (default) otherwise continue code below
+            manager.alarmsCancel(id)
+            print("done")
+        else:
+            print("alarm cancelation aborted")
+
+    except CrypyException as error:
+        print(error.args[0])
+    
