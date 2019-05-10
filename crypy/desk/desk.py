@@ -20,12 +20,14 @@ try:
     from .. import config
     from .model.balance import BalanceAll
     from .model.symbol import Symbol, SymbolError
+    from .model.order import parse as parse_order
     from .market import Market
 except (ImportError, ValueError, ModuleNotFoundError):
     from crypy.euc import ccxt
     from crypy import config
     from crypy.desk.model.balance import BalanceAll
     from crypy.desk.model.symbol import Symbol, SymbolError
+    from crypy.desk.model.order import parse as parse_order
     from crypy.desk.market import Market, MarketError
 
 
@@ -114,8 +116,18 @@ class Desk:
         } #TODO: type cheking of keys
 
         ret = self._ccxtMethod(name2cmd[what]['cmd'], **name2cmd[what]['kwargs'])
-        return (ret if (len(ret) > 0) else 'no '+ what)
-    
+
+        if len(ret) > 0:
+            tret = []
+            if what in ['orders-all', 'orders-open', 'orders-closed']:
+                for o in ret:
+                    tret = parse_order(o)
+                # replacing return with the typed version
+            return tret
+        else:  # TODO : exception
+
+            return 'no '+ what
+
     def _ccxtMethod(self, ccxtMethod, **kwargs):
         """ccxt Method wrapper"""
         exg = self.exchange

@@ -7,7 +7,7 @@ from enum import Enum
 
 from pydantic.dataclasses import dataclass
 try:
-    from desk.errors import CrypyException
+    from ..errors import CrypyException
 except (ImportError, ValueError):
     from crypy.desk.errors import CrypyException
 
@@ -162,6 +162,10 @@ class Symbol:
 
 
 if __name__ == "__main__":
-    import pytest
-    pytest.main(['-s', '--doctest-modules', '--doctest-continue-on-failure', __file__])
+    import unittest
+    import doctest
+
+    testSuite = unittest.TestSuite()
+    testSuite.addTest(doctest.DocTestSuite())
+    unittest.TextTestRunner(verbosity=2).run(testSuite)
 

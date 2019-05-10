@@ -4,7 +4,7 @@ from hypothesis.strategies import sampled_from
 from crypy.desk.model import symbol
 
 
-class TestMPMath(unittest.TestCase):
+class TestSymbol(unittest.TestCase):
     @given(sampled_from(symbol.Fiat))
     @settings(
         verbosity=Verbosity.verbose
