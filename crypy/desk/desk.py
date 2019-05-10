@@ -7,12 +7,14 @@ import json
 
 try:
     from . import capital
-    from . import order
+    from .order import Order
+    from . import errors
     import global_vars as gv
 except (ImportError, ValueError, ModuleNotFoundError):
     import crypy.desk.global_vars as gv
     from crypy.desk import capital
-    from crypy.desk import order
+    from crypy.desk.order import Order
+    from crypy.desk import errors
 
 from .utils import formatTS
 
@@ -218,7 +220,51 @@ class Desk:
         return orderbook #TODO better format i guess
 
 
-    def execute(self, ordr: order.Order):
+    def create_order(self, symbol, order_type, expiracy, side, amount=None, price=None, peg_offset_value=None,
+                         peg_price_type=None, leverage=None, display_qty=None, stop_px=None, exec_inst=None):
+
+        # TODO proper return type (see https://github.com/dry-python/returns for example) to handle errors via type
+        if not 'createOrder' in self.exchange.has or not self.exchange.has['createOrder']:
+            raise errors.CrypyException(msg=f'createOrder() not available for this exchange')
+
+        ### TYPE handling ###
+        if order_type in ['Market', 'Limit']:
+            # if self.data['leverage'] > 1:
+            # set leverage in call cases, working on bitmex, check other exchanges
+            if not hasattr(self.exchange, 'privatePostPositionLeverage'):
+                raise errors.CrypyException(msg=f'privatePostPositionLeverage() not available for this exchange')
+
+        # TODO : instantiate the order implementation matching our current exchange.
+        order = Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
+                      display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value,
+                      peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=None,
+                      amount=amount,
+                      price=price)
+
+        return order
+
+    def edit_order(self, symbol, order_type, expiracy, order_id, side, amount=None, price=None, peg_offset_value=None,
+                   peg_price_type=None, leverage=None, display_qty=None, stop_px=None, exec_inst=None):
+
+        # TODO proper return type (see https://github.com/dry-python/returns for example) to handle errors via type
+        if not 'editOrder' in self.exchange.has or not self.exchange.has['editOrder']:
+            raise errors.CrypyException(f'editOrder() not available for this exchange')
+
+        ### TYPE handling ###
+        if order_type in ['Market', 'Limit']:
+            # if self.data['leverage'] > 1:
+            # set leverage in call cases, working on bitmex, check other exchanges
+            if not hasattr(self.exchange, 'privatePostPositionLeverage'):
+                raise errors.CrypyException(msg=f'privatePostPositionLeverage() not available for this exchange')
+
+        order = Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
+                      display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value,
+                      peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=order_id, amount=amount,
+                      price=price)
+
+        return order
+
+    def execute(self, ordr: Order):
         try:
             # first handle the leverage (NB: it changes leverage of existing orders too!)
             # NB: we do it here coz we cant the leverage value to be visible when showing data

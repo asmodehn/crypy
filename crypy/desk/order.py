@@ -14,7 +14,7 @@ class Order:
     abstract
     """
 
-    def __init__(self, side, symbol, type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, amount, price, id = None):
+    def __init__(self, side, symbol, type, leverage = None, display_qty = None, stop_px = None, peg_offset_value = None, peg_price_type = None, exec_inst = None, expiracy = None, amount = None, price = None, id = None):
         #TODO(future): Note, that some exchanges will not accept market orders (they only allow limit orders).
 
         self.data = {
