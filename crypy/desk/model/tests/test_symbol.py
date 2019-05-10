@@ -1,14 +1,11 @@
 import unittest
-from hypothesis import given, settings, Verbosity
+from hypothesis import given, settings, Verbosity, HealthCheck
 from hypothesis.strategies import sampled_from
 from crypy.desk.model import symbol
 
 
 class TestMPMath(unittest.TestCase):
     @given(sampled_from(symbol.Fiat))
-    @settings(
-        verbosity=Verbosity.verbose
-    )  # , suppress_health_check=[HealthCheck.too_slow])
     def test_fiat_currency(self, code: symbol.Fiat):
 
         cur = symbol.currency(str(code))
