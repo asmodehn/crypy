@@ -47,7 +47,7 @@ def list(ctx):
     """
     TODO list alarms, maybe goes into pair_manager directly?
     """
-    print("manager.alarmList() TODO")
+    print(manager.listAlarms());
 
 @alarm_group.command()
 @click.pass_context

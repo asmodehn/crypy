@@ -23,7 +23,7 @@ class Manager:
 
     def __init__(self, conf: config.ExchangeSection = None, ticker = gv.defPAIR):
         
-        #TODO use Desk instead of exchange
+        #TODO use Desk instead of exchange directly
 
         self.exchangeName = conf.name
 
@@ -35,4 +35,16 @@ class Manager:
         self.alarms = []
 
     def info(self):
-        return f"Trade Manager for  {self.symbol} on {self.exchangeName} WIP"
+        return f"Trade Manager for {self.symbol} on {self.exchangeName} WIP"
+
+    def listAlarms(self):
+        if len(self.alarms) > 0:
+            list = ''
+
+            for alarm in self.alarms:
+                list += f"{alarm.id} -> {alarm.definition} "
+
+            return list
+
+        else:
+            return 'no alarm setup atm'

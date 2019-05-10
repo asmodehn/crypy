@@ -54,7 +54,7 @@ class Alarm:
         self.manager = manager
 
         self.data = {}
-        self.definition =  "defintion text TODO"
+        self.definition =  "definition text TODO"
 
     def execute(self):
         try:
