@@ -78,6 +78,34 @@ def validate_order(ticker, order: Order, execution):
         raise errors.CrypyException("order execution aborted")
 
 
+# Only here to centralise the create/format/validate flow in one place
+# TODO : Order class should probably be split per order_type...
+def make_order(symbol, side, order_type, leverage=None, order_id=None, stop_px=None, peg_offset_value=None, peg_price_type=None, exec_inst=None,
+                                  display_qty=None,
+                                  expiracy=None,
+                                  amount=None,
+                                  price=None):
+    if order_id is None:
+
+        order = desk.create_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
+                                  display_qty=display_qty, stop_px=stop_px, peg_offset_value= peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst,
+                                  expiracy=expiracy,
+                                  amount=amount,
+                                  price=price)
+
+    else:
+        # TODO : review workflow here, we should fetch an order first before being able to edit it
+        order = desk.edit_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
+                                order_id=order_id,
+                                display_qty=display_qty, stop_px=stop_px, peg_offset_value= peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst,
+                                expiracy=expiracy,
+                                amount=amount,
+                                price=price)
+
+    order.format(marketPrice=desk.do_fetchMarketPrice(symbol=order.data.get('symbol')))
+
+    validate_order(desk.ticker, order, execution=desk.execute)
+
 @order_group.command()
 @order_options_all
 @order_options_shortslongs
@@ -91,26 +119,7 @@ def short(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
 
     try:
 
-        if id is None:
-
-            order = desk.create_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
-                          display_qty=display_qty,
-                          expiracy=expiracy,
-                          amount=amount,
-                          price=price)
-
-        else:
-
-            order = desk.edit_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
-                                    order_id=id,
-                                      display_qty=display_qty,
-                                      expiracy=expiracy,
-                                      amount=amount,
-                                      price=price)
-
-        order.format(marketPrice=desk.do_fetchMarketPrice(symbol=order.data.get('symbol')))
-
-        validate_order(desk.ticker, order, execution=desk.execute)
+       make_order(symbol=symbol, order_type=order_type, side=side, leverage=leverage, display_qty=display_qty, expiracy=expiracy, order_id=id, amount=amount, price=price)
 
     except errors.CrypyException as cpex:
         print(cpex)
@@ -128,15 +137,7 @@ def long(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     symbol = gv.ticker2symbol[desk.ticker]
     try:
 
-        if id is None:
-            order = desk.create_order(symbol=symbol, side=side, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, amount=amount, price=price)
-        else:
-
-            order = desk.edit_order(symbol=symbol, side=side, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, order_id = id, amount=amount, price=price)
-
-        order.format(marketPrice=desk.do_fetchMarketPrice(symbol=order.data.get('symbol')))
-
-        validate_order(desk.ticker, order, execution=desk.execute)
+        make_order(symbol=symbol, side=side, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, order_id = id, amount=amount, price=price)
 
     except errors.CrypyException as cpex:
         print(cpex)
@@ -160,15 +161,7 @@ def stop(ctx, side, full, expiracy, id, amount, price):
 
     try:
 
-        if id is None:
-
-            order = desk.create_order(symbol = symbol, side=side, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, amount=amount)
-        else:
-            order = desk.edit_order(symbol = symbol, side=side, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
-
-        order.format(marketPrice=desk.do_fetchMarketPrice(symbol=order.data.get('symbol')))
-
-        validate_order(desk.ticker, order, execution=desk.execute)
+        make_order(symbol = symbol, side=side, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
 
     except errors.CrypyException as cpex:
         print(cpex)
@@ -193,15 +186,7 @@ def trailing_stop(ctx, side, full, expiracy, id, amount, offset_price):
     peg_offset_value=offset_price
 
     try:
-        if id is None:
-
-            order = desk.create_order(symbol=symbol, side = side, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, amount=amount)
-        else:
-            order = desk.edit_order(symbol= symbol, side = side, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
-
-        order.format(marketPrice=desk.do_fetchMarketPrice(symbol=order.data.get('symbol')))
-
-        validate_order(desk.ticker, order, execution=desk.execute)
+        make_order(symbol= symbol, side = side, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
 
     except errors.CrypyException as cpex:
         print(cpex)
@@ -224,15 +209,7 @@ def take_profit(ctx, side, full, expiracy, id, amount, price):
     order_type = 'MarketIfTouched'
 
     try:
-        if id is None:
-
-            order = desk.create_order(symbol = symbol, side = side, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, amount=amount)
-        else:
-            order = desk.edit_order(symbol = symbol, side = side, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
-
-        order.format(marketPrice=desk.do_fetchMarketPrice(symbol=order.data.get('symbol')))
-
-        validate_order(desk.ticker, order, execution=desk.execute)
+        make_order(symbol = symbol, side = side, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
 
     except errors.CrypyException as cpex:
         print(cpex)
