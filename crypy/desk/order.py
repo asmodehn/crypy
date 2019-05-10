@@ -36,6 +36,8 @@ class Order:
         if id is not None:
             self.data['id'] = id
 
+        #TODO check side of new and old orders (aka when an id is present) are the same, otherwise ccxt error (mex: immediate liquidation error)
+
 
     def format(self, marketPrice):
         #TODO error handling
@@ -109,8 +111,3 @@ class Order:
                     print(f"    • {subKey}: {subValue}")
             else:
                 print(f" ○ {key}: {value}")
-
-    @staticmethod
-    def fetchL2OrderBook(desk, symbol, limit):
-        orderbook = desk._ccxtMethod('fetchL2OrderBook', symbol = symbol, limit = limit)
-        return orderbook #TODO better format i guess

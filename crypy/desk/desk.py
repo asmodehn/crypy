@@ -212,6 +212,12 @@ class Desk:
         spread = (ask - bid) if (bid and ask) else None
         return { 'bid': bid, 'ask': ask, 'spread': spread }
 
+
+    def fetchL2OrderBook(self, symbol, limit):
+        orderbook = self._ccxtMethod('fetchL2OrderBook', symbol = symbol, limit = limit)
+        return orderbook #TODO better format i guess
+
+
     def execute(self, ordr: order.Order):
         try:
             # first handle the leverage (NB: it changes leverage of existing orders too!)

@@ -203,7 +203,7 @@ def orderbook(ctx, limit):
     """
     Pair: L2 orderbook
     """
-    print( Order.fetchL2OrderBook(desk = desk, symbol = gv.ticker2symbol[desk.ticker], limit = limit) )
+    print( desk.fetchL2OrderBook(symbol = gv.ticker2symbol[desk.ticker], limit = limit) )
 
 @order_group.command()
 @click.option('-s', '--since', type=Datetime(format='%Y-%m-%d'), show_default=True)
