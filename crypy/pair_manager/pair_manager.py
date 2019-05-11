@@ -42,24 +42,24 @@ class Manager:
         if len(self.alarms) > 0:
             list = ''
 
-            "TODO better format"
+            #TODO better format
             for alarm in self.alarms:
                 list += f"{alarm.id} -> {alarm.definition} "
 
             return list
 
         else:
-            return 'no alarm set atm'
+            raise CrypyException(msg = "No alarm set atm")
 
     def alarmShow(self, id):
         try: 
             return self.alarms[id].definition
         except:
-            raise CrypyException(msg = f"No alarm at id {id}")
+            raise CrypyException(msg = f"No alarm at Id {id}")
 
     def alarmsCancel(self, id):
         "TODO multiple at same time"
         try: 
             del self.alarms[id]
         except:
-            raise CrypyException(msg = f"No alarm at id {id}")
+            raise CrypyException(msg = f"No alarm at Id {id}")

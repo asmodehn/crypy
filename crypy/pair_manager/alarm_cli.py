@@ -35,7 +35,7 @@ def alarm_group(ctx, id = None):
         if click.confirm('Please confirm'): #abort (but don't die!) here if No is selected (default) otherwise continue code below
             print(alarm.execute())
         else:
-            print("alarm creation aborted")
+            print("Alarm creation aborted")
 
     else: #there is a subcommand -> run it
         pass
@@ -47,23 +47,27 @@ def list(ctx):
     """
     list alarms
     """
-    print(manager.alarmsList());
+    try: 
+        print(manager.alarmsList())
+
+    except CrypyException as error:
+        print(error.args[0])
 
 @alarm_group.command()
+@click.argument('id', nargs=1, type=int, required=True)
 @click.pass_context
-def cancel(ctx):
+def cancel(ctx, id):
     """
-    cancel alarm
+    Cancel alarm at Id
     """
-    id = 0 #TODO get id from cli
     try: 
         print(f"Cancel the following alarm: {manager.alarmShow(id)} ?")
 
         if click.confirm('Please confirm'): #abort (but don't die!) here if No is selected (default) otherwise continue code below
             manager.alarmsCancel(id)
-            print("done")
+            print("Done")
         else:
-            print("alarm cancelation aborted")
+            print("Alarm cancelation aborted")
 
     except CrypyException as error:
         print(error.args[0])
