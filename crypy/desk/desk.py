@@ -7,10 +7,14 @@ import json
 
 try:
     from . import capital
+    from .order import Order
+    from . import errors
     import global_vars as gv
 except (ImportError, ValueError, ModuleNotFoundError):
     import crypy.desk.global_vars as gv
     from crypy.desk import capital
+    from crypy.desk.order import Order
+    from crypy.desk import errors
 
 from .utils import formatTS
 
@@ -28,6 +32,13 @@ except (ImportError, ValueError, ModuleNotFoundError):
     from crypy.desk.model.symbol import Symbol, SymbolError
     from crypy.desk.market import Market, MarketError
 
+
+
+import structlog
+filename = 'desk.log'
+file = open( filename, 'a') #TODO where do we close it
+#structlog.configure( logger_factory=structlog.PrintLogger(file = file) )
+logger = structlog.PrintLogger(file = file)
 
 class Desk:
 
@@ -197,4 +208,100 @@ class Desk:
         ask = orderbook['asks'][0][0] if len (orderbook['asks']) > 0 else None
         spread = (ask - bid) if (bid and ask) else None
         return { 'bid': bid, 'ask': ask, 'spread': spread }
+
+
+    def fetchL2OrderBook(self, symbol, limit):
+        orderbook = self._ccxtMethod('fetchL2OrderBook', symbol = symbol, limit = limit)
+        return orderbook #TODO better format i guess
+
+
+    def create_order(self, symbol, order_type, expiracy, side, amount=None, price=None, peg_offset_value=None,
+                         peg_price_type=None, leverage=None, display_qty=None, stop_px=None, exec_inst=None):
+
+        # TODO proper return type (see https://github.com/dry-python/returns for example) to handle errors via type
+        if not 'createOrder' in self.exchange.has or not self.exchange.has['createOrder']:
+            raise errors.CrypyException(msg=f'createOrder() not available for this exchange')
+
+        ### TYPE handling ###
+        if order_type in ['Market', 'Limit']:
+            # if self.data['leverage'] > 1:
+            # set leverage in call cases, working on bitmex, check other exchanges
+            if not hasattr(self.exchange, 'privatePostPositionLeverage'):
+                raise errors.CrypyException(msg=f'privatePostPositionLeverage() not available for this exchange')
+
+        # TODO : instantiate the order implementation matching our current exchange.
+        order = Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
+                      display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value,
+                      peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=None,
+                      amount=amount,
+                      price=price)
+
+        return order
+
+    def edit_order(self, symbol, order_type, expiracy, order_id, side, amount=None, price=None, peg_offset_value=None,
+                   peg_price_type=None, leverage=None, display_qty=None, stop_px=None, exec_inst=None):
+
+        # TODO proper return type (see https://github.com/dry-python/returns for example) to handle errors via type
+        if not 'editOrder' in self.exchange.has or not self.exchange.has['editOrder']:
+            raise errors.CrypyException(f'editOrder() not available for this exchange')
+
+        ### TYPE handling ###
+        if order_type in ['Market', 'Limit']:
+            # if self.data['leverage'] > 1:
+            # set leverage in call cases, working on bitmex, check other exchanges
+            if not hasattr(self.exchange, 'privatePostPositionLeverage'):
+                raise errors.CrypyException(msg=f'privatePostPositionLeverage() not available for this exchange')
+
+        order = Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
+                      display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value,
+                      peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=order_id, amount=amount,
+                      price=price)
+
+        return order
+
+    def execute_order(self, ordr: Order):
+        try:
+            # first handle the leverage (NB: it changes leverage of existing orders too!)
+            # NB: we do it here coz we cant the leverage value to be visible when showing data
+            leverage = ordr.data['leverage']
+            if leverage is not None:
+                response2 = self.exchange.privatePostPositionLeverage(
+                    {"symbol": self.exchange.markets[ordr.data['symbol']]['id'], "leverage": leverage})
+                logger.msg(str(response2))
+            del ordr.data['leverage']  # remove the leverage from the order data coz createOrder() doesnt handle it
+
+            # second post/update order
+            if 'id' not in ordr.data:
+                response = self.exchange.createOrder(**dict(ordr.data))
+            else:
+                response = self.exchange.editOrder(**dict(ordr.data))
+
+            logger.msg(str(response))
+
+            return 'order_id: ' + response['id']
+
+        except ccxt.BaseError as error:
+            return error.args[0]
+        except Exception as error:
+            return "Error: " + str(type(error)) + " " + str(error)
+
+    def cancel_order(self, order_ids):
+        if not 'cancelOrder' in self.exchange.has or not self.exchange.has['cancelOrder']:
+            return f'cancelOrder() not available for this exchange'
+
+        for order_id in order_ids:
+            try:
+                self.exchange.cancelOrder(order_id)
+                print(f'order(s) {order_id} canceled')
+                #TODO remove from order log also
+            except ccxt.NetworkError as err:
+                #TODO retry cancelation
+                pass
+            except ccxt.ValidationError as err:
+                print(f'order(s) {order_id} invalid: bad length, cancel failed')
+            except ccxt.OrderNotFound as err:
+                print(f'order(s) {order_id} not found: already canceled/closed or invalid order id, cancel failed')
+            except ccxt.BaseError as error:
+                print(f'order(s) {order_id} not found invalid order id or something else, cancel failed')
+                print(error.args[0])
 

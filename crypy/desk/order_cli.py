@@ -6,6 +6,7 @@ import os
 import sys
 
 import click
+import typing
 from click_datetime import Datetime
 import prompt_toolkit
 
@@ -13,6 +14,7 @@ import prompt_toolkit
 #from collections import OrderedDict
 
 import crypy.desk.global_vars as gv
+from crypy.desk import errors
 
 from .order import Order
 from .desk_cli import cli_root_group
@@ -57,35 +59,52 @@ def order_options_stops(ctx):
     click.argument('amount', nargs=1, type=float, required=False)(ctx)
     return ctx
 
-# OR use functools.partial
-def make_order(ticker, order_type, expiracy, id = None, amount = None, price = None, peg_offset_value = None, peg_price_type = None, leverage = None, display_qty = None, stop_px = None, exec_inst = None):
 
-    def partial(side):
-        #nonlocal ticker, order_type, leverage, display_qty, stop_px, peg_offset_value, peg_price_type, exec_inst, expiracy, id, amount, price
+def validate_order(ticker, order: Order, execution):
+    if order.data.get("id") is None:
+        click.echo(
+            f'Do you want to execute the following {order.data.get("side").upper()} on {ticker} ?')  # TODO show SHORT instead of SELL and LONG instead of BUY
+    else:
+        click.echo(
+            f'Do you want to change order {order.data.get("id")} with the following {order.data.get("side").upper()} on {ticker} ?')  # TODO show SHORT instead of SELL and LONG instead of BUY
 
-        global desk
-        symbol = gv.ticker2symbol[ticker]
+    order.showData()
 
-        order = Order(exchange = desk.exchange, symbol=symbol, side=side, type=order_type, leverage=leverage, display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=id, amount=amount, price=price)
-        
-        orderValidation = order.format(marketPrice = desk.do_fetchMarketPrice(symbol = symbol))
-        if orderValidation is not None:
-            return orderValidation
-        
-        if id is None:
-            click.echo(f'Do you want to execute the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
-        else:
-            click.echo(f'Do you want to change order {id} with the following {side.upper()} on {ticker} ?') #TODO show SHORT instead of SELL and LONG instead of BUY
+    if click.confirm('Please confirm' + (
+            ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if (
+                    not order.data.get("leverage") is None and order.data.get("leverage") > 1) else '')):  # abort (but don't die!) here if No is selected (default) otherwise continue code below
+        return execution(order)
+    else:  # TODO : handle errors better
+        raise errors.CrypyException("order execution aborted")
 
-        order.showData()
 
-        if click.confirm('Please confirm' + ( ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if (not leverage is None and leverage > 1) else '')): #abort (but don't die!) here if No is selected (default) otherwise continue code below
-            return order.execute()
-        else:
-            return "order execution aborted"
+# Only here to centralise the create/format/validate flow in one place
+# TODO : Order class should probably be split per order_type...
+def make_order(symbol, side, order_type, leverage=None, order_id=None, stop_px=None, peg_offset_value=None, peg_price_type=None, exec_inst=None,
+                                  display_qty=None,
+                                  expiracy=None,
+                                  amount=None,
+                                  price=None):
+    if order_id is None:
 
-    return partial
+        order = desk.create_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
+                                  display_qty=display_qty, stop_px=stop_px, peg_offset_value= peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst,
+                                  expiracy=expiracy,
+                                  amount=amount,
+                                  price=price)
 
+    else:
+        # TODO : review workflow here, we should fetch an order first before being able to edit it
+        order = desk.edit_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
+                                order_id=order_id,
+                                display_qty=display_qty, stop_px=stop_px, peg_offset_value= peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst,
+                                expiracy=expiracy,
+                                amount=amount,
+                                price=price)
+
+    order.format(marketPrice=desk.do_fetchMarketPrice(symbol=order.data.get('symbol')))
+
+    print(validate_order(desk.ticker, order, execution=desk.execute_order))
 
 @order_group.command()
 @order_options_all
@@ -96,7 +115,15 @@ def short(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     Pair: Create/Update a SHORT order
     """
     side = "sell" #ccxt value
-    print(make_order(ticker = desk.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
+    symbol = gv.ticker2symbol[desk.ticker]
+
+    try:
+
+       make_order(symbol=symbol, order_type=order_type, side=side, leverage=leverage, display_qty=display_qty, expiracy=expiracy, order_id=id, amount=amount, price=price)
+
+    except errors.CrypyException as cpex:
+        print(cpex)
+
 
 @order_group.command()
 @order_options_all
@@ -107,7 +134,14 @@ def long(ctx, order_type, leverage, display_qty, expiracy, id, amount, price):
     Pair: Create/Update a LONG order
     """
     side = "buy" #ccxt value
-    print(make_order(ticker = desk.ticker, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, id = id, amount=amount, price=price)(side=side))
+    symbol = gv.ticker2symbol[desk.ticker]
+    try:
+
+        make_order(symbol=symbol, side=side, order_type = order_type, leverage=leverage, display_qty=display_qty, expiracy=expiracy, order_id = id, amount=amount, price=price)
+
+    except errors.CrypyException as cpex:
+        print(cpex)
+
 
 @order_group.command()
 @order_options_all
@@ -118,12 +152,20 @@ def stop(ctx, side, full, expiracy, id, amount, price):
     """
     Pair: Set/Update a stop for a position (WARNING: ATM be careful if no position and with the --side option which might trigger a Market order (TODO abstract this))
     """
+    symbol = gv.ticker2symbol[desk.ticker]
     exec_inst = 'IndexPrice'
     if full :
         exec_inst += ',Close'
         amount = None
     order_type = 'Stop'
-    print(make_order(ticker = desk.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+
+    try:
+
+        make_order(symbol = symbol, side=side, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
+
+    except errors.CrypyException as cpex:
+        print(cpex)
+
 
 @order_group.command()
 @order_options_all
@@ -134,6 +176,7 @@ def trailing_stop(ctx, side, full, expiracy, id, amount, offset_price):
     """
     Pair: Set/Update a trailing stop for a position (WARNING: ATM be careful if no position and with the --side option which might trigger a Market order (TODO abstract this))
     """
+    symbol = gv.ticker2symbol[desk.ticker]
     exec_inst = 'IndexPrice'
     if full :
         exec_inst += ',Close'
@@ -141,7 +184,12 @@ def trailing_stop(ctx, side, full, expiracy, id, amount, offset_price):
     order_type = 'Pegged'
     peg_price_type = 'TrailingStopPeg'
     peg_offset_value=offset_price
-    print(make_order(ticker = desk.ticker, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+
+    try:
+        make_order(symbol= symbol, side = side, order_type = order_type, peg_offset_value=peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
+
+    except errors.CrypyException as cpex:
+        print(cpex)
 
 @order_group.command()
 @order_options_all
@@ -153,13 +201,18 @@ def take_profit(ctx, side, full, expiracy, id, amount, price):
     """
     Pair: Set/Update a take profit order on a position (WARNING: ATM be careful if no position and with the --side option which might trigger a Market order (TODO abstract this))
     """
+    symbol = gv.ticker2symbol[desk.ticker]
     exec_inst = 'IndexPrice'
     if full :
         exec_inst += ',Close'
         amount = None
     order_type = 'MarketIfTouched'
 
-    print(make_order(ticker = desk.ticker, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, id = id, amount=amount)(side=side))
+    try:
+        make_order(symbol = symbol, side = side, order_type = order_type, stop_px=price, exec_inst=exec_inst, expiracy=expiracy, order_id = id, amount=amount)
+
+    except errors.CrypyException as cpex:
+        print(cpex)
 
 
 #TODO: we might need to do trailing-stop-short, trailing-stop-long and trailing-take-profits orders
@@ -172,7 +225,7 @@ def cancel_order(ctx, ids):
     """
     Pair: cancel order(s)
     """
-    Order.cancel(exchange=desk.exchange, order_ids=ids)
+    desk.cancel_order(order_ids=ids)
 
 #TODO cancel all orders
 
@@ -183,7 +236,7 @@ def orderbook(ctx, limit):
     """
     Pair: L2 orderbook
     """
-    print( Order.fetchL2OrderBook(desk = desk, symbol = gv.ticker2symbol[desk.ticker], limit = limit) )
+    print( desk.fetchL2OrderBook(symbol = gv.ticker2symbol[desk.ticker], limit = limit) )
 
 @order_group.command()
 @click.option('-s', '--since', type=Datetime(format='%Y-%m-%d'), show_default=True)

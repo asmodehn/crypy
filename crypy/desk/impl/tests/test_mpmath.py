@@ -27,7 +27,6 @@ To Verify MPMath Semantics and wrap it in type(class-e)s that makes sense for us
 
 class TestMPMath(unittest.TestCase):
     @given(mpf=MPFloat.strategy())
-    @settings(verbosity=Verbosity.verbose)
     def test_mpfloat_identity_equality(self, mpf):
 
         assert mpf is not float(mpf)
@@ -43,7 +42,6 @@ class TestMPMath(unittest.TestCase):
         assert mpg == mpf
 
     @given(mpff=MPFuzzyFloat.strategy())
-    @settings(verbosity=Verbosity.verbose)
     def test_mpfuzzyfloat_identity_equality(self, mpff):
 
         assert mpff is not float(mpff)
@@ -59,7 +57,6 @@ class TestMPMath(unittest.TestCase):
         assert mpfg == mpff
 
     @given(mpij=MPInterval.strategy())
-    @settings(verbosity=Verbosity.verbose)
     def test_mpinterval_identity_equality(self, mpij):
 
         mpij_bis = mpij
@@ -73,7 +70,6 @@ class TestMPMath(unittest.TestCase):
         assert mpjk == mpij
 
     @given(mpf=MPFloat.strategy(), val=floats(allow_nan=False, allow_infinity=False))
-    @settings(verbosity=Verbosity.verbose)
     def test_mpfloat_add_sub(self, mpf, val):
 
         added_raw = mpf + val
@@ -94,7 +90,6 @@ class TestMPMath(unittest.TestCase):
     @given(
         mpf=MPFuzzyFloat.strategy(), val=floats(allow_nan=False, allow_infinity=False)
     )
-    @settings(verbosity=Verbosity.verbose)
     def test_mpfuzzyfloat_add_sub(self, mpf, val):
 
         added_raw = mpf + val
@@ -113,7 +108,6 @@ class TestMPMath(unittest.TestCase):
         assert sub_raw_raw == sub_mp_raw == sub_raw_mp == sub_mp_mp
 
     @given(mpia=MPInterval.strategy(), mpib=MPInterval.strategy())
-    @settings(verbosity=Verbosity.verbose)
     def test_mpinterval_add_sub(self, mpia, mpib):
 
         added = mpia + mpib
@@ -129,19 +123,16 @@ class TestMPMath(unittest.TestCase):
     ###############################
 
     @given(bp=MPBoundedFloat.strategy())
-    @settings(verbosity=Verbosity.verbose)
     def test_init(self, bp):
         # it should be a good init bounded value
         assert bp() == bp.value
 
     # Testing equality properties
     @given(bp=MPBoundedFloat.strategy())
-    @settings(verbosity=Verbosity.verbose)
     def test_eq_reflx(self, bp):
         assert bp == bp
 
     @given(bp1=MPBoundedFloat.strategy(), bp2=MPBoundedFloat.strategy())
-    @settings(verbosity=Verbosity.verbose)
     def test_eq_symm(self, bp1, bp2):
         if bp1 == bp2:
             assert bp2 == bp1
@@ -151,13 +142,11 @@ class TestMPMath(unittest.TestCase):
         bp2=MPBoundedFloat.strategy(),
         bp3=MPBoundedFloat.strategy(),
     )
-    @settings(verbosity=Verbosity.verbose)
     def test_eq_trans(self, bp1, bp2, bp3):
         if bp1 == bp2 and bp2 == bp3:
             assert bp1 == bp3
 
     @given(bp=MPBoundedFloat.strategy())
-    @settings(verbosity=Verbosity.verbose)
     def test_in_call(self, bp):
         assert bp() in bp.bounds
 
@@ -187,14 +176,12 @@ def overbounds(draw,):
 
 class TestMPMathRaises(unittest.TestCase):
     @given(vb=overbounds())
-    @settings(verbosity=Verbosity.verbose, suppress_health_check=[HealthCheck.too_slow])
     def test_overbounds(self, vb):
         v, b = vb
         with self.assertRaises(MPBoundedFloatException):
             bp = MPBoundedFloat(value=v, bounds=b)
 
     @given(vb=underbounds())
-    @settings(verbosity=Verbosity.verbose, suppress_health_check=[HealthCheck.too_slow])
     def test_underbounds(self, vb):
         v, b = vb
         with self.assertRaises(MPBoundedFloatException):
