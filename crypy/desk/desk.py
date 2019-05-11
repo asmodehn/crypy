@@ -179,16 +179,11 @@ class Desk:
 
         return tohlcvlist
 
-    def do_fetchBalance(self, customParams):
-        return self._ccxtMethod('fetchBalance', params = customParams)
-    def do_fetchTotalBalance(self, customParams):
-        return self._ccxtMethod('fetchTotalBalance', params = customParams)
-    def do_fetchFreeBalance(self, customParams):
-        return self._ccxtMethod('fetchFreeBalance', params = customParams)
-    def do_fetchUsedBalance(self, customParams):
-        return self._ccxtMethod('fetchUsedBalance', params = customParams)
-    def do_fetchPartialBalance(self, customParams):
-        return self._ccxtMethod('fetchPartialBalance', params = customParams)
+    def do_fetchBalance(self, customParams, part = None):
+        if part is None:
+            return self._ccxtMethod('fetchBalance', params = customParams)
+        else:
+            return self._ccxtMethod('fetchPartialBalance', part = part, params = customParams)
 
     def do_fetchLedger(self, code, since, limit, customParams):
         return self._ccxtMethod('fetchLedger', code = code, since = since, limit = limit, params = customParams)
