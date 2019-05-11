@@ -103,6 +103,10 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# Pipenv on python multiversion
+Pipfile.lock
 
 # crypy files
 crypy.ini
+kraken.key
+testnet.bitmex.key

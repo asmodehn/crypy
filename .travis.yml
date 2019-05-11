@@ -1,0 +1,24 @@
+dist: xenial
+language: python
+
+branches:
+  except:
+    - gh-pages
+
+python:
+  - '3.7'
+  #- '3.8'
+
+
+install:
+  - pipenv install --pre --skip-lock
+
+script:
+  - python -m crypy.desk.impl.tests
+  - python -m crypy.desk.model.tests
+  - python -m crypy.desk.tests
+  - python -m crypy.tests
+
+notifications:
+  email: false
+

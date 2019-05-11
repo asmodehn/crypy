@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 arctic = "*"
 click = "*"
+click-repl = "*"
+click-datetime = "*"
 mypy = "*"
 spyder = "*"
 #cryptocompare = "*"
@@ -17,9 +19,21 @@ mocket = "*"
 matplotlib = "*"
 requests = "*"
 plotly = "*"
-click-repl = "*"
+#influxdb = {editable = true,git = "ssh://git@github.com/asmodehn/influxdb-python.git",path = "."}
+#pystore = "*"
+#pint = "*"
+ptterm = "*"
+#vulcano = "*"
+black = "*"
+pydantic = "*"
+hypothesis = "*"
+structlog = "*"
+#parameterized = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.7"
+
+[pipenv]
+allow_prereleases = true

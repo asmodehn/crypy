@@ -10,3 +10,6 @@
 [submodule "submodules/ccxt"]
 	path = submodules/ccxt
 	url = https://github.com/ccxt/ccxt.git
+[submodule "submodules/mpmath"]
+	path = submodules/mpmath
+	url = https://github.com/fredrik-johansson/mpmath.git
