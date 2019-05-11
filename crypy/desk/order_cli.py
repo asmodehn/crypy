@@ -73,7 +73,7 @@ def validate_order(ticker, order: Order, execution):
     if click.confirm('Please confirm' + (
             ' (NB: if there are existing orders for the pair, it\'ll change their leverage also)' if (
                     not order.data.get("leverage") is None and order.data.get("leverage") > 1) else '')):  # abort (but don't die!) here if No is selected (default) otherwise continue code below
-        return order
+        return execution(order)
     else:  # TODO : handle errors better
         raise errors.CrypyException("order execution aborted")
 
@@ -104,7 +104,7 @@ def make_order(symbol, side, order_type, leverage=None, order_id=None, stop_px=N
 
     order.format(marketPrice=desk.do_fetchMarketPrice(symbol=order.data.get('symbol')))
 
-    validate_order(desk.ticker, order, execution=desk.execute)
+    print(validate_order(desk.ticker, order, execution=desk.execute_order))
 
 @order_group.command()
 @order_options_all
@@ -225,7 +225,7 @@ def cancel_order(ctx, ids):
     """
     Pair: cancel order(s)
     """
-    desk.cancel(order_ids=ids)
+    desk.cancel_order(order_ids=ids)
 
 #TODO cancel all orders
 
