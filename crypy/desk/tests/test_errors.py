@@ -1,46 +1,56 @@
-import pytest
+import unittest
 
-from .. import errors
-
-
-def test_raise_nomsg():
-
-    def crypy_except():
-        raise errors.CrypyException
-
-    with pytest.raises(errors.CrypyException) as excinfo:
-        crypy_except()
-
-    assert excinfo.type is errors.CrypyException
-    assert len(str(excinfo.value)) > 0
-    assert not hasattr(excinfo.value, 'original')
-
-    #TODO : traceback
+from crypy.desk import errors
 
 
-def test_raise_msg():
-    def crypy_except():
-        raise errors.CrypyException("Ayayyayayay!")
+class TestErrors(unittest.TestCase):
+    def test_raise_nomsg(self):
+        def crypy_except():
+            raise errors.CrypyException
 
-    with pytest.raises(errors.CrypyException) as excinfo:
-        crypy_except()
+        with self.assertRaises(errors.CrypyException) as excinfo:
+            crypy_except()
 
-    assert excinfo.type is errors.CrypyException
-    assert str(excinfo.value) == "Ayayyayayay!"
-    assert not hasattr(excinfo.value, 'original')
+        assert len(str(excinfo.exception)) > 0
+        assert not hasattr(excinfo.exception, "original")
+
+        # TODO : traceback
+
+    def test_raise_msg(self):
+        def crypy_except():
+            raise errors.CrypyException("Ayayyayayay!")
+
+        with self.assertRaises(errors.CrypyException) as excinfo:
+            crypy_except()
+
+        assert str(excinfo.exception) == "Ayayyayayay!"
+        assert not hasattr(excinfo.exception, "original")
+
+    def test_raise_original(self):
+        def crypy_except():
+            raise errors.CrypyException(
+                "Ayayyayayay!", original=Exception("bouhouhouh")
+            )
+
+        with self.assertRaises(errors.CrypyException) as excinfo:
+            crypy_except()
+
+        assert str(excinfo.exception) == "Ayayyayayay!: bouhouhouh"
+        assert str(excinfo.exception.original) == "bouhouhouh"
+
+    def test_raise_fixer(self):
+        def crypy_fixer_except():
+            return 42
+
+        def crypy_except():
+            raise errors.CrypyException("Ayayyayayay!", fixer=crypy_fixer_except)
+
+        with self.assertRaises(errors.CrypyException) as excinfo:
+            crypy_except()
+
+        assert str(excinfo.exception) == "Ayayyayayay!"
+        assert excinfo.exception.fixme == crypy_fixer_except
 
 
-def test_raise_encaps():
-    def crypy_except():
-        raise errors.CrypyException("Ayayyayayay!", Exception("bouhouhouh"))
-
-    with pytest.raises(errors.CrypyException) as excinfo:
-        crypy_except()
-
-    assert excinfo.type is errors.CrypyException
-    assert str(excinfo.value) == "Ayayyayayay!: bouhouhouh"
-    assert str(excinfo.value.original) == "bouhouhouh"
-
-
-if __name__ == '__main__':
-    pytest.main(['-s', __file__])
+if __name__ == "__main__":
+    unittest.main()

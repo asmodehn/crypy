@@ -19,3 +19,7 @@ class TestBalanceAll(unittest.TestCase):
         assert b.per_currency(currency_list=[TestBalanceAll.TestCrypto.TC1]) == {
             TestBalanceAll.TestCrypto.TC1: Balance(free=42.0, used=51.0, total=93.0)
         }
+
+
+if __name__ == "__main__":
+    unittest.main()

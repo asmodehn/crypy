@@ -24,18 +24,20 @@ sample_config_file = """
 """
 
 
-default_filename = "settings.ini"
+default_pathlist = [
+    # high priority overrides
+    Path(os.environ.get("CRYPY_CONF", os.curdir)),
+    # to have crypy.ini in root of source repo (not for production)
+    Path(os.path.dirname(__file__)),
+    # Production locations :
+    Path(os.path.expanduser("~/.config/crypy")),
+    Path("/etc/crypy"),
+]
 
 
-def resolve(filename: str) -> Path:
-    pathlist = [
-        os.curdir,
-        os.path.join(os.path.dirname(__file__), os.path.pardir),
-        # having crypy.ini in root of source repo (not for production)
-        os.path.expanduser("~/.config/crypy"),
-        "/etc/crypy",
-        os.environ.get("CRYPY_CONF"),
-    ]
+def resolve(filename: str, pathlist: typing.List[Path] = None) -> Path:
+
+    pathlist = pathlist if pathlist is not None else default_pathlist
 
     config_file = None
     # We loop on truthy value only (no empty string, no none, etc.)
@@ -48,9 +50,9 @@ def resolve(filename: str) -> Path:
     if (
         config_file is None
     ):  # If not present, generate sample file, locally to make it obvious.
-        config_file = Path(os.curdir).joinpath(filename)
+        config_file = Path(pathlist[0]).joinpath(filename)
         logging.warning(
-            "config file not found. {config_file} has been generated for you."
+            f"config file not found. {config_file} has been generated for you."
         )
         config_file.write_text(sample_config_file)
 
@@ -65,7 +67,9 @@ class ExchangeSection:
     A Section is immutable.
     """
 
-    credentials_file: typing.Optional[Path]  # value computed in config, based on section name
+    credentials_file: typing.Optional[
+        Path
+    ]  # value computed in config, based on section name
     credentials_parser: configparser.ConfigParser = field(
         init=False,
         default=configparser.ConfigParser(
@@ -85,13 +89,13 @@ class ExchangeSection:
         # Loading file
         resolved_cf = resolve(str(credentials_file))
         try:
-            with open(resolved_cf, 'r') as f:
+            with open(resolved_cf, "r") as f:
                 config_string = f.read()
                 try:
                     self.credentials_parser.read_string(config_string)
-                except (configparser.MissingSectionHeaderError, ):
-                    config_string = '[credentials]\n' + config_string
-                    with open(resolved_cf, 'w') as fw:
+                except (configparser.MissingSectionHeaderError,):
+                    config_string = "[credentials]\n" + config_string
+                    with open(resolved_cf, "w") as fw:
                         fw.write(config_string)
                     self.credentials_parser.read_string(config_string)
         except Exception as e:
@@ -99,26 +103,28 @@ class ExchangeSection:
 
     def exec_hook(self, ccxt):
         # Using the impl_hook from settings.ini
-        locals = {'config': asdict(self), 'impl': None}
+        locals = {"config": asdict(self), "impl": None}
         # TODO : find a cleaner way to pass globals (config defaults from another place ?)
-        exec(self.impl_hook, {'ccxt': ccxt}, locals)  # TODO check exchange id existing in CCXT
-        return locals.get('impl')
+        exec(
+            self.impl_hook, {"ccxt": ccxt}, locals
+        )  # TODO check exchange id existing in CCXT
+        return locals.get("impl")
 
     @property
     def apiKey(self):
-        if 'apiKey' not in self.credentials_parser.defaults():
+        if "apiKey" not in self.credentials_parser.defaults():
 
             self.parse_creds(self.credentials_file)
 
-        return self.credentials_parser['credentials']['apiKey']
+        return self.credentials_parser["credentials"]["apiKey"]
 
     @property
     def secret(self):
-        if 'secret' not in self.credentials_parser.defaults():
+        if "secret" not in self.credentials_parser.defaults():
 
             self.parse_creds(self.credentials_file)
 
-        return self.credentials_parser['credentials']['secret']
+        return self.credentials_parser["credentials"]["secret"]
 
 
 @dataclass(frozen=True)
@@ -129,10 +135,10 @@ class Config:
     Config is immutable.
     """
 
-    filepath: typing.Optional[Path] = field(
-        init=True, default=resolve(default_filename), repr=True
-    )
-    #TODO : extract the file reading part to a function, so we can pass strings and more ?
+    filename: typing.Optional[str] = field(
+        init=True, default="settings.ini", repr=True
+    )  # note no default value here to prevent accidental file creation on import.
+    # TODO : extract the file reading part to a function, so we can pass strings and more ?
     parser: configparser.ConfigParser = field(
         init=False,
         default=configparser.ConfigParser(
@@ -148,9 +154,12 @@ class Config:
     )
 
     def __post_init__(self):
+        # this will create file if needed
+        filepath = resolve(self.filename)
+
         self.parser.optionxform = str  # to prevent lowering keys
         # Loading file
-        self.parser.read(str(self.filepath))
+        self.parser.read(str(filepath))
 
         # Filling up frozen attributes for later access
         object.__setattr__(self, "defaults", self.parser.defaults())
@@ -159,7 +168,7 @@ class Config:
             sec_kwargs = {}
             """parses a section according to dataclass annotations"""
             for k, v in ExchangeSection.__annotations__.items():
-                if k is 'name':
+                if k is "name":
                     sec_kwargs[k] = section
                 else:
                     try:
@@ -180,8 +189,9 @@ class Config:
             # Otherwise, if settings.ini location is relative, and resolved at runtime, the keyfile location also is, and could be in found in a different location.
             if "credentials_file" not in sec_kwargs:
                 sec_kwargs["credentials_file"] = Path(
-                    #self.filepath.parent,
-                    section + ".key"
+                    # self.filepath.parent,
+                    section
+                    + ".key"
                 )
 
             # Note: sections members not in dataclass are ignored
@@ -196,7 +206,7 @@ class Config:
 
 
 if __name__ == "__main__":
-    cff = resolve(default_filename)
+    cff = resolve("settings.ini")
     print(f"Config file found at {cff.absolute()}")
     c = Config(filepath=cff)
     print(c)

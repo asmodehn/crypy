@@ -58,7 +58,6 @@ def exchange_info(obj):
 
 @cli_root_group.command()
 @click.argument('what', type=click.Choice(['data', 'orders-all', 'orders-open', 'orders-closed', 'positions', 'trades']), default='data')
-#TODO limit argument
 @click.pass_obj
 def list(obj, what):
     """display all followed pairs informations"""
@@ -73,44 +72,13 @@ def exit(ctx):
     #TODO find a way to run the fucking cmd
     
 @cli_root_group.command()
+@click.argument('part', type=click.Choice(['total', 'free', 'used']), default=None, required = False)
 @click.pass_context
-def balance(ctx):
+def balance(ctx, part):
     """
     Get user balance (private data)
     """
-    print( desk.do_fetchBalance( customParams = {}) ) #todo customparams for exchange if needed
-
-@cli_root_group.command()
-@click.pass_context
-def balance_total(ctx):
-    """
-    Get user total balance (private data)
-    """
-    print( desk.do_fetchTotalBalance( customParams = {}) ) #todo customparams for exchange if needed
-
-@cli_root_group.command()
-@click.pass_context
-def balance_free(ctx):
-    """
-    Get user free balance (private data)
-    """
-    print(desk.do_fetchFreeBalance( customParams = {}) ) #todo customparams for exchange if needed
-
-@cli_root_group.command()
-@click.pass_context
-def balance_used(ctx):
-    """
-    Get user used balance (private data)
-    """
-    print( desk.do_fetchUsedBalance( customParams = {}) ) #todo customparams for exchange if needed
-
-@cli_root_group.command()
-@click.pass_context
-def balance_partial(ctx):
-    """
-    Get user partial? balance (private data)
-    """
-    print( desk.do_fetchPartialBalance( customParams = {}) ) #todo customparams for exchange if needed
+    print( desk.do_fetchBalance( part = part, customParams = {}) ) #todo customparams for exchange if needed
 
 
 @cli_root_group.command()

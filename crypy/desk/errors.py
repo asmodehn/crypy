@@ -4,9 +4,11 @@ from .. import config
 
 # Ref : https://julien.danjou.info/python-exceptions-guide/
 
+
 class CrypyException(Exception):
     """Base class for Crypy's exceptions
     """
+
     def __init__(self, msg=None, fixer=None, original=None):
         """Initializes a Crypy exception.
         Optionally can wrap another exception"""
@@ -18,7 +20,7 @@ class CrypyException(Exception):
             super().__init__(f"{msg}")
 
         # Dynamically build a method to address this exception
-        self.__call__ = fixer
+        self.fixme = fixer
 
 
 class ExchangeError(CrypyException):
@@ -35,7 +37,3 @@ class PermissionDenied(AuthenticationError):
 
 class AccountSuspended(AuthenticationError):
     pass
-
-
-
-
