@@ -28,7 +28,7 @@ default_pathlist = [
     # high priority overrides
     Path(os.environ.get("CRYPY_CONF", os.curdir)),
     # to have crypy.ini in root of source repo (not for production)
-    Path(os.path.dirname(__file__).join(os.path.pardir)),
+    Path(os.path.dirname(__file__)),
     # Production locations :
     Path(os.path.expanduser("~/.config/crypy")),
     Path("/etc/crypy"),
