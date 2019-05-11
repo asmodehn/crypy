@@ -264,7 +264,7 @@ class Desk:
 
         return order
 
-    def execute(self, ordr: Order):
+    def execute_order(self, ordr: Order):
         try:
             # first handle the leverage (NB: it changes leverage of existing orders too!)
             # NB: we do it here coz we cant the leverage value to be visible when showing data
@@ -290,7 +290,7 @@ class Desk:
         except Exception as error:
             return "Error: " + str(type(error)) + " " + str(error)
 
-    def cancel(self, order_ids):
+    def cancel_order(self, order_ids):
         if not 'cancelOrder' in self.exchange.has or not self.exchange.has['cancelOrder']:
             return f'cancelOrder() not available for this exchange'
 
