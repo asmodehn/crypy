@@ -19,7 +19,7 @@ operands = [
     "Moving Down %"
 ]
 
-timeframes = [
+triggers = [
     "Only once",
     "Once per bar", 
     "Once per bar close",
@@ -50,17 +50,27 @@ class Alarm:
     def timeframe(self) -> str:
         return self.tf
 
-    def __init__(self, manager):
-        self.manager = manager
+    def __init__(self, alarmsList, timeframe, trigger, expiracy, indicator, indicator_value, operand, check, check_value):
+        self.alarmsList = alarmsList
 
-        self.data = {}
-        self.definition =  "definition text TODO"
+        self.data = {
+            'timeframe':timeframe,
+            'trigger': trigger,
+            'expiracy': expiracy,
+            'indicator': indicator,
+            'indicator_value': indicator_value,
+            'operand': operand,
+            'check': check,
+            'check_value': check_value
+        }
+        self.definition =  f"Alert {self.data['trigger']} when {self.data['indicator']}({self.data['indicator_value']}) {self.data['operand']} {self.data['check']}({self.data['check_value']}) for the {self.data['timeframe']} timeframe" + ( f" before {self.data['expiracy']}" if self.data['expiracy'] is not None else "")
+
 
     def execute(self):
         try:
             
-            self.manager.alarms.append(self)
-            self.id = len(self.manager.alarms) - 1
+            self.alarmsList.append(self)
+            self.id = len(self.alarmsList) - 1
 
             return f"Alarm created, id: {self.id}"
 
