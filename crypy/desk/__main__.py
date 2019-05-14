@@ -7,9 +7,11 @@
 
 import asyncio
 
-import crypy.desk.global_vars as gv  #TODO Validate it first
+import crypy.desk.global_vars as gv
+from crypy.desk.desk import Desk
 from crypy.desk.order import Order
-from crypy.config import resolve, ExchangeSection
+
+import crypy.config
 
 """Entrypoint for the desk subpackage
 Manages one (currently) exchange, via CLI
@@ -18,11 +20,16 @@ Manages one (currently) exchange, via CLI
 async def asyncLong():
     print('order creation starting')
 
-    exchangeName = "testnet.bitmex" #TODO temp in the end will need to test every and all exchanges
-    ticker = 'BTCUSD' #TODO temp in the end we will need to handle all traded pair for the exchange
+    #exchangeName = "testnet.bitmex" #TODO temp in the end will need to test every and all exchanges
+    #ticker = 'BTCUSD' #TODO temp in the end we will need to handle all traded pair for the exchange
 
-    #marketPrice = desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])
-    marketPrice = {'bid': 4000, 'ask': 4001, 'spread': 1}
+    exchange = gv.defEXCHANGE
+    ticker = gv.defPAIR
+
+    config = crypy.config.Config() # Loading config early to customize choice based on it.
+    exchange_config = config.sections[exchange]
+    desk = Desk(conf=exchange_config)
+
 
     ### defaults ###
     leverage = 25
@@ -36,31 +43,26 @@ async def asyncLong():
     expiracy = None
 
     side = 'buy'
-    type = 'Limit'
+    order_type = 'Limit'
     symbol = gv.ticker2symbol[ticker]
     amount = 0.5
+
+    marketPrice = desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])    
     price = marketPrice['bid'] - 100
     mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
 
-    order = Order(
-        symbol = symbol,
-        side = side,
-        type = type,
-        leverage = leverage,
-        display_qty = display_qty,
-        stop_px = stop_px,
-        peg_offset_value = peg_offset_value,
-        peg_price_type = peg_price_type,
-        exec_inst = exec_inst,
-        expiracy = expiracy,
-        id = None,
-        amount = amount,
-        price = price
-    )
-
-    orderValidation = order.format(marketPrice)
+    order = desk.create_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
+                                  display_qty=display_qty, stop_px=stop_px, peg_offset_value= peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst,
+                                  expiracy=expiracy,
+                                  amount=amount,
+                                  price=price)
 
     await asyncio.sleep(1) #TEMP
+
+    order.format(marketPrice = marketPrice)
+
+    print(desk.execute_order(order))
+
     return 'order is valid, create it now'
 
 if __name__ == '__main__':
