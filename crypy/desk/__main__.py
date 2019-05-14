@@ -28,7 +28,9 @@ async def asyncLong():
 
     config = crypy.config.Config() # Loading config early to customize choice based on it.
     exchange_config = config.sections[exchange]
-    desk = Desk(conf=exchange_config)
+    print('Desk creation starting')
+    desk = Desk(conf=exchange_config) #TODO async desk impl ?
+    print('Desk creation done')
 
 
     ### defaults ###
@@ -46,24 +48,33 @@ async def asyncLong():
     order_type = 'Limit'
     symbol = gv.ticker2symbol[ticker]
     amount = 0.5
-
-    marketPrice = desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])    
-    price = marketPrice['bid'] - 100
+    
+    print('fetching market price starting')
+    marketPrice = await desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])  
+    print('fetching market price done')  
+    price = marketPrice['bid'] - 250
     mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
 
-    order = desk.create_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
+    
+    print('order creation starting')
+    order = await desk.create_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
                                   display_qty=display_qty, stop_px=stop_px, peg_offset_value= peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst,
                                   expiracy=expiracy,
                                   amount=amount,
                                   price=price)
+    print('order creation done')
 
-    await asyncio.sleep(1) #TEMP
+    
+    print('order formatting starting')
+    await order.format(marketPrice = marketPrice)
+    print('order formatting done')
 
-    order.format(marketPrice = marketPrice)
+    
+    print('order execution starting')
+    print(await desk.execute_order(order))
+    print('order execution done')
 
-    print(desk.execute_order(order))
-
-    return 'order is valid, create it now'
+    return 'order is passed'
 
 if __name__ == '__main__':
     event_loop = asyncio.get_event_loop()

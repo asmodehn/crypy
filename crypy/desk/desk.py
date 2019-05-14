@@ -20,13 +20,13 @@ from .utils import formatTS
 
 
 try:
-    from ..euc import ccxt
+    from ..euc import ccxt.async_support as ccxt
     from .. import config
     from .model.balance import BalanceAll
     from .model.symbol import Symbol, SymbolError
     from .market import Market
 except (ImportError, ValueError, ModuleNotFoundError):
-    from crypy.euc import ccxt
+    from crypy.euc import ccxt.async_support as ccxt
     from crypy import config
     from crypy.desk.model.balance import BalanceAll
     from crypy.desk.model.symbol import Symbol, SymbolError
@@ -43,9 +43,9 @@ logger = structlog.PrintLogger(file = file)
 class Desk:
 
     @property
-    def markets(self) -> typing.Dict[Symbol, Market]:
+    async def markets(self) -> typing.Dict[Symbol, Market]:
         if self.exchange.markets is None:
-            self.exchange.load_markets()
+            await self.exchange.load_markets()
 
         # symbol filter
         filtered_syms = dict()
@@ -58,13 +58,13 @@ class Desk:
         return markets_dict
 
     @property
-    def balance(self) -> BalanceAll:
+    async def balance(self) -> BalanceAll:
         # TODO : timer to do the call only after some timeout...
-        bal_raw = self._ccxtMethod('fetchBalance')
+        bal_raw = await self._ccxtMethod('fetchBalance')
         bal = BalanceAll(**{e: bal_raw.get(e) for e in ['free', 'used', 'total']})
         return bal
 
-    def __init__(self, conf: config.ExchangeSection = None):
+    async def __init__(self, conf: config.ExchangeSection = None):
         self.exchangeName = conf.name
 
         # Using the impl_hook from settings.ini
@@ -75,12 +75,12 @@ class Desk:
         self.exchange.apiKey = conf.apiKey
         self.exchange.secret = conf.secret
 
-        self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
+        await self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
         self.capital = capital.Capital(self.exchange)
         self.capital.update()
 
-    def do_getExchangeInfo(self):
+    async def do_getExchangeInfo(self):
         filename = 'exg_' + self.exchangeName + '.txt'
         file = open( filename, 'w')
         print ("### HAS ###", file = file)
@@ -93,7 +93,7 @@ class Desk:
         #Exchange properties https://github.com/ccxt/ccxt/wiki/Manual#exchange-properties
         return 'Exchange data printed to ' + filename
 
-    def do_list(self, what, customParams, symbol=None):
+    async def do_list(self, what, customParams, symbol=None):
         #for pair in gv.wholeData:
         #    print(f"{pair} {what}: {str(gv.wholeData[pair][what])}")
         defaultKWargs = { 'params' : customParams }
@@ -127,7 +127,7 @@ class Desk:
         ret = self._ccxtMethod(name2cmd[what]['cmd'], **name2cmd[what]['kwargs'])
         return (ret if (len(ret) > 0) else 'no '+ what)
     
-    def _ccxtMethod(self, ccxtMethod, **kwargs):
+    async def _ccxtMethod(self, ccxtMethod, **kwargs):
         """ccxt Method wrapper"""
         exg = self.exchange
         if not ccxtMethod in exg.has or not exg.has[ccxtMethod]: #ccxt unified method check
@@ -136,7 +136,7 @@ class Desk:
 
         try:
             #Do we need to (re)load market everytime to get accurate data?
-            ret = getattr(exg, ccxtMethod)(**kwargs)
+            ret = await getattr(exg, ccxtMethod)(**kwargs)
             return ret
 
         except ccxt.BaseError as error:
@@ -144,7 +144,7 @@ class Desk:
         except TypeError as error:
             return f"invalid argument(s) when calling {ccxtMethod}(). Internal error: {error.args[0]}"
 
-    def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
+    async def do_fetchOHLCV(self, symbol, timeframe, since, limit, customParams = {}):
         #NB: this fetch OHLCV from the start of the exchange pair on Mex
         
         #TODO handle supported exchanges.timeframes
@@ -164,7 +164,7 @@ class Desk:
             since = since.timestamp() * 1000 #timestamp in millisecond
 
         #Get data
-        tohlcv = self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, since = since, limit = limit, params = customParams)
+        tohlcv = await self._ccxtMethod('fetchOHLCV', symbol = symbol, timeframe = timeframe, since = since, limit = limit, params = customParams)
         if isinstance(tohlcv, str): #handle return in error
             return tohlcv
 
@@ -190,32 +190,32 @@ class Desk:
 
         return tohlcvlist
 
-    def do_fetchBalance(self, customParams, part = None):
+    async def do_fetchBalance(self, customParams, part = None):
         if part is None:
-            return self._ccxtMethod('fetchBalance', params = customParams)
+            return await self._ccxtMethod('fetchBalance', params = customParams)
         else:
-            return self._ccxtMethod('fetchPartialBalance', part = part, params = customParams)
+            return await self._ccxtMethod('fetchPartialBalance', part = part, params = customParams)
 
-    def do_fetchLedger(self, code, since, limit, customParams):
-        return self._ccxtMethod('fetchLedger', code = code, since = since, limit = limit, params = customParams)
+    async def do_fetchLedger(self, code, since, limit, customParams):
+        return await self._ccxtMethod('fetchLedger', code = code, since = since, limit = limit, params = customParams)
 
-    def do_fetchTrades(self, symbol, since, limit, customParams):
-        return self._ccxtMethod('fetchTrades', symbol = symbol, since = since, limit = limit, params = customParams)
+    async def do_fetchTrades(self, symbol, since, limit, customParams):
+        return await self._ccxtMethod('fetchTrades', symbol = symbol, since = since, limit = limit, params = customParams)
 
-    def do_fetchMarketPrice(self, symbol):
-        orderbook = self._ccxtMethod('fetch_order_book', symbol = symbol)
+    async def do_fetchMarketPrice(self, symbol):
+        orderbook = await self._ccxtMethod('fetch_order_book', symbol = symbol)
         bid = orderbook['bids'][0][0] if len (orderbook['bids']) > 0 else None
         ask = orderbook['asks'][0][0] if len (orderbook['asks']) > 0 else None
         spread = (ask - bid) if (bid and ask) else None
         return { 'bid': bid, 'ask': ask, 'spread': spread }
 
 
-    def fetchL2OrderBook(self, symbol, limit):
-        orderbook = self._ccxtMethod('fetchL2OrderBook', symbol = symbol, limit = limit)
+    async def fetchL2OrderBook(self, symbol, limit):
+        orderbook = await self._ccxtMethod('fetchL2OrderBook', symbol = symbol, limit = limit)
         return orderbook #TODO better format i guess
 
 
-    def create_order(self, symbol, order_type, expiracy, side, amount=None, price=None, peg_offset_value=None,
+    async def create_order(self, symbol, order_type, expiracy, side, amount=None, price=None, peg_offset_value=None,
                          peg_price_type=None, leverage=None, display_qty=None, stop_px=None, exec_inst=None):
 
         # TODO proper return type (see https://github.com/dry-python/returns for example) to handle errors via type
@@ -230,7 +230,7 @@ class Desk:
                 raise errors.CrypyException(msg=f'privatePostPositionLeverage() not available for this exchange')
 
         # TODO : instantiate the order implementation matching our current exchange.
-        order = Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
+        order = await Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
                       display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value,
                       peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=None,
                       amount=amount,
@@ -238,7 +238,7 @@ class Desk:
 
         return order
 
-    def edit_order(self, symbol, order_type, expiracy, order_id, side, amount=None, price=None, peg_offset_value=None,
+    async def edit_order(self, symbol, order_type, expiracy, order_id, side, amount=None, price=None, peg_offset_value=None,
                    peg_price_type=None, leverage=None, display_qty=None, stop_px=None, exec_inst=None):
 
         # TODO proper return type (see https://github.com/dry-python/returns for example) to handle errors via type
@@ -252,29 +252,29 @@ class Desk:
             if not hasattr(self.exchange, 'privatePostPositionLeverage'):
                 raise errors.CrypyException(msg=f'privatePostPositionLeverage() not available for this exchange')
 
-        order = Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
+        order = await Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
                       display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value,
                       peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=order_id, amount=amount,
                       price=price)
 
         return order
 
-    def execute_order(self, ordr: Order):
+    async def execute_order(self, ordr: Order):
         try:
             # first handle the leverage (NB: it changes leverage of existing orders too!)
             # NB: we do it here coz we cant the leverage value to be visible when showing data
             leverage = ordr.data['leverage']
             if leverage is not None:
-                response2 = self.exchange.privatePostPositionLeverage(
+                response2 = await self.exchange.privatePostPositionLeverage(
                     {"symbol": self.exchange.markets[ordr.data['symbol']]['id'], "leverage": leverage})
                 logger.msg(str(response2))
             del ordr.data['leverage']  # remove the leverage from the order data coz createOrder() doesnt handle it
 
             # second post/update order
             if 'id' not in ordr.data:
-                response = self.exchange.createOrder(**dict(ordr.data))
+                response = await self.exchange.createOrder(**dict(ordr.data))
             else:
-                response = self.exchange.editOrder(**dict(ordr.data))
+                response = await self.exchange.editOrder(**dict(ordr.data))
 
             logger.msg(str(response))
 
@@ -285,13 +285,13 @@ class Desk:
         except Exception as error:
             return "Error: " + str(type(error)) + " " + str(error)
 
-    def cancel_order(self, order_ids):
+    async def cancel_order(self, order_ids):
         if not 'cancelOrder' in self.exchange.has or not self.exchange.has['cancelOrder']:
             return f'cancelOrder() not available for this exchange'
 
         for order_id in order_ids:
             try:
-                self.exchange.cancelOrder(order_id)
+                await self.exchange.cancelOrder(order_id)
                 print(f'order(s) {order_id} canceled')
                 #TODO remove from order log also
             except ccxt.NetworkError as err:
