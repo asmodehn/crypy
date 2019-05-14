@@ -1,9 +1,19 @@
 import unittest
-from hypothesis import given, settings, Verbosity
-from hypothesis.strategies import sampled_from
-from crypy.desk.model import symbol
 
-from .. import order
+from dataclasses import asdict
+import pydantic
+import pydantic.dataclasses as dataclasses
+
+from hypothesis import given, settings, Verbosity
+from hypothesis.strategies import sampled_from, integers
+
+import uuid
+import datetime
+
+try:
+    from .. import order, symbol
+except ImportError:
+    from crypy.desk.model import order, symbol
 
 
 class TestOrderSide(unittest.TestCase):
@@ -44,6 +54,23 @@ class TestOrderType(unittest.TestCase):
 class TestOrder(unittest.TestCase):
     # TODO : make sure consistency is checked on raw data before building the dataclass...
 
+    basic_valid = order.Order(**{
+        'id': uuid.uuid4(),
+        'timestamp': int(),
+        'datetime': datetime.datetime.now(),
+        'lastTradeTimestamp': int(),
+        'symbol': symbol.Symbol(base='USD', quote='BTC'),
+        'side': order.OrderSide('buy'),
+        'price': float(),
+        'amount': float(),
+        'cost': float(),
+        'filled': float(),
+        'remaining': float(),
+        'type': order.OrderType('market'),
+        'status': order.OrderStatus('closed'),
+        'fee': None,
+    })
+
     def test_id(self):
         pass
 
@@ -66,8 +93,26 @@ class TestOrder(unittest.TestCase):
     def test_cost(self):
         pass
 
-    def test_filled(self):
-        pass
+    @given(integers())
+    def test_filled_valid(self, v):
+        neword_vals = {k: v for k, v in asdict(self.basic_valid).items()
+               if k not in ['filled']
+            }
+        neword_vals.update({ 'filled': v })
+        neword = order.Order(
+            **neword_vals
+        )
+
+    @given(sampled_from([0.42, 'bob']))
+    def test_filled_invalid(self, val):
+        neword_vals = {k: v for k, v in asdict(self.basic_valid).items()
+               if k not in ['filled']
+            }
+        neword_vals.update({'filled': val})
+        with self.assertRaises(pydantic.ValidationError):
+            neword = order.Order(
+                **neword_vals
+            )
 
     def test_remaining(self):
         pass

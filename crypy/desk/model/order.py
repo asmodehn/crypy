@@ -21,14 +21,6 @@ except (ImportError, ValueError):
     from crypy.desk.errors import CrypyException
 
 
-class CurrencyError(CrypyException):
-    pass
-
-
-class SymbolError(CrypyException):
-    pass
-
-
 """
 Module defining Currency and Symbol
 To use types to filter out what we are not interested in.
@@ -88,7 +80,7 @@ class Order:
     side: OrderSide
     price: float
     amount: float
-    cost : float
+    cost: float
     filled: float
     remaining: float
     type: OrderType
@@ -96,13 +88,19 @@ class Order:
     fee: typing.Optional[float]
 
     @validator('symbol', pre=True, always=True)
-    def cast_Symbol(cls, v) -> symbol.Symbol:
-        try:
-            s = symbol.Symbol.from_str(v)
+    def cast_Symbol(cls, v: str) -> symbol.Symbol:
 
-        except CrypyException:
-            raise OrderError(f"Symbol not parsed from {v}")
+        if isinstance(v, symbol.Symbol):
+            return v
+        else:
+            try:
+                if isinstance(v, str):
+                    s = symbol.Symbol.from_str(v)
+                else:
+                    raise OrderError(f"Symbol not parsed from {v}")
 
+            except CrypyException:
+                raise OrderError(f"Symbol not parsed from {v}")
         return s
 
 
