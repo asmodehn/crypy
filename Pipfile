@@ -29,6 +29,8 @@ pydantic = "*"
 hypothesis = "*"
 structlog = "*"
 #parameterized = "*"
+aiohttp = "*"
+yarl = "*"
 
 [dev-packages]
 

@@ -20,13 +20,13 @@ from .utils import formatTS
 
 
 try:
-    from ..euc import ccxt.async_support as ccxt
+    from ..euc import async_support as ccxt
     from .. import config
     from .model.balance import BalanceAll
     from .model.symbol import Symbol, SymbolError
     from .market import Market
 except (ImportError, ValueError, ModuleNotFoundError):
-    from crypy.euc import ccxt.async_support as ccxt
+    from crypy.euc import async_support as ccxt
     from crypy import config
     from crypy.desk.model.balance import BalanceAll
     from crypy.desk.model.symbol import Symbol, SymbolError
@@ -64,7 +64,7 @@ class Desk:
         bal = BalanceAll(**{e: bal_raw.get(e) for e in ['free', 'used', 'total']})
         return bal
 
-    async def __init__(self, conf: config.ExchangeSection = None):
+    def __init__(self, conf: config.ExchangeSection = None):
         self.exchangeName = conf.name
 
         # Using the impl_hook from settings.ini
@@ -75,7 +75,7 @@ class Desk:
         self.exchange.apiKey = conf.apiKey
         self.exchange.secret = conf.secret
 
-        await self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
+        self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
 
         self.capital = capital.Capital(self.exchange)
         self.capital.update()

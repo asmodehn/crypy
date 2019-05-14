@@ -43,6 +43,18 @@ with sys_path_ctx(ccxt_path):
 assert sys.modules['ccxt'].__file__ == str(ccxt_path.joinpath('ccxt').joinpath('__init__.py'))
 
 
+# CCXT.async_support
+# Note this is the path from the place where the python interpreter is launched
+ccxt_async_path = Path(__file__).parents[2].joinpath("submodules/ccxt/python/ccxt").resolve()
+
+
+with sys_path_ctx(ccxt_async_path):
+    import async_support
+
+# ccxt.async_support is now loaded in sys.modules from the git submodules folder
+assert sys.modules['async_support'].__file__ == str(ccxt_async_path.joinpath('async_support').joinpath('__init__.py'))
+
+
 # MPMATH
 # Note this is the path from the place where the python interpreter is launched
 mpmath_path = Path(__file__).parents[2].joinpath("submodules/mpmath/").resolve()
@@ -50,10 +62,10 @@ mpmath_path = Path(__file__).parents[2].joinpath("submodules/mpmath/").resolve()
 with sys_path_ctx(mpmath_path):
     import mpmath
 
-# ccxt is now loaded in sys.modules from the git submodules folder
+# mpmath is now loaded in sys.modules from the git submodules folder
 assert sys.modules['mpmath'].__file__ == str(mpmath_path.joinpath('mpmath').joinpath('__init__.py'))
 
-__all__ = ['ccxt', 'mpmath']
+__all__ = ['ccxt', 'async_support', 'mpmath']
 
 
 
