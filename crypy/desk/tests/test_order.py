@@ -14,15 +14,13 @@ params = [
 
 
 class TestOrder(unittest.TestCase):
-    exchangeName = "testnet.bitmex" #TODO temp in the ne d will need to very all exchanges
-    ticker = 'BTCUSD' #TODO temp in the ne d will need to very all traded pair for the exchange
+    exchangeName = "testnet.bitmex" #TODO temp in the end will need to test every and all exchanges
+    ticker = 'BTCUSD' #TODO temp in the end we will need to handle all traded pair for the exchange
 
     #marketPrice = desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])
     marketPrice = {'bid': 4000, 'ask': 4001, 'spread': 1}
 
     ### defaults ###
-    side = 'buy' #TODO TEST others
-    order_type = 'Limit' #TODO TEST others
     leverage = 25
     display_qty = None #TODO TEST others
     amount = None
