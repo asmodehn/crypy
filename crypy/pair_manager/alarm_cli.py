@@ -5,7 +5,7 @@ import prompt_toolkit
 import crypy.desk.global_vars as gv
 from crypy.desk.errors import CrypyException
 
-import alarm
+from . import alarm
 from .pair_manager_cli import cli_root_group
 
 

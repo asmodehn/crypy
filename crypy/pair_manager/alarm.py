@@ -6,24 +6,24 @@ import datetime
 
 operands = [
     "Crossing",
-    "Crossing Up",
-    "Crossing Down",
-    "Greater Than",
-    "Lesser Than",
-    "Entering Range",
-    "Exiting Range",
-    "Inside Range",
-    "Moving Up",
-    "Moving Up %",
-    "Moving Down",
-    "Moving Down %"
+    "CrossingUp",
+    "CrossingDown",
+    "GreaterThan",
+    "LesserThan",
+    "EnteringRange",
+    "ExitingRange",
+    "InsideRange",
+    "MovingUp",
+    "MovingUpPct",
+    "MovingDown",
+    "MovingDownPct"
 ]
 
 triggers = [
-    "Only once",
-    "Once per bar", 
-    "Once per bar close",
-    "Once per minute"
+    "OnlyOnce",
+    "OncePerBar",
+    "OncePerBarClose",
+    "OncePerMinute"
 ]
 
 class Alarm:

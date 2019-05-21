@@ -9,7 +9,7 @@ import crypy.desk.global_vars as gv
 from crypy.desk.errors import CrypyException
 
 from .position_manager import Position_Manager
-import strategy
+from . import strategy
 
 try:
     from ..euc import ccxt
