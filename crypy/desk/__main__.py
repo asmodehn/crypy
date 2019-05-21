@@ -7,11 +7,11 @@
 
 import asyncio
 
-import crypy.desk.global_vars as gv
-from crypy.desk.desk import Desk
-from crypy.desk.order import Order
+#import crypy.desk.global_vars as gv
+#from crypy.desk.desk import Desk
+#from crypy.desk.order import Order
 
-import crypy.config
+#import crypy.config
 
 """Entrypoint for the desk subpackage
 Manages one (currently) exchange, via CLI
@@ -77,11 +77,16 @@ async def asyncLong():
         return 'order is passed'
 
 
+from crypy.desk.desk_cli import cli_root_group as cli
+from crypy.desk.capital_cli import capital_group
+from crypy.desk.order_cli import order_group
+
 if __name__ == '__main__':
     event_loop = asyncio.get_event_loop()
     try:
         ret = event_loop.run_until_complete(
-            asyncLong()
+            #asyncLong()
+            cli()
         )
         print(f"Returned: {ret}")
 

@@ -4,6 +4,7 @@
 #import functools
 import os
 import sys
+import asyncio
 
 import click
 import prompt_toolkit
@@ -74,11 +75,11 @@ def exit(ctx):
 @cli_root_group.command()
 @click.argument('part', type=click.Choice(['total', 'free', 'used']), default=None, required = False)
 @click.pass_context
-def balance(ctx, part):
+async def balance(ctx, part):
     """
     Get user balance (private data)
     """
-    print( desk.do_fetchBalance( part = part, customParams = {}) ) #todo customparams for exchange if needed
+    print( await desk.do_fetchBalance( part = part, customParams = {}) ) #todo customparams for exchange if needed
 
 
 @cli_root_group.command()
