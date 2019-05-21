@@ -31,6 +31,8 @@ structlog = "*"
 #parameterized = "*"
 aiohttp = "*"
 yarl = "*"
+fuzzyfinder = "*"
+returns = "*"
 
 [dev-packages]
 
