@@ -26,55 +26,56 @@ async def asyncLong():
     exchange = gv.defEXCHANGE
     ticker = gv.defPAIR
 
-    config = crypy.config.Config() # Loading config early to customize choice based on it.
+    config = crypy.config.Config()  # Loading config early to customize choice based on it.
     exchange_config = config.sections[exchange]
+
     print('Desk creation starting')
-    desk = Desk(conf=exchange_config) #TODO async desk impl ?
-    print('Desk creation done')
+    async with Desk(conf=exchange_config) as desk:
+        print('Desk creation done')
+
+        ### defaults ###
+        leverage = 25
+        display_qty = None #TODO TEST others
+        amount = None
+        price = None
+        peg_offset_value = None
+        peg_price_type = None
+        stop_px = None
+        exec_inst = None
+        expiracy = None
+
+        side = 'buy'
+        order_type = 'Limit'
+        symbol = gv.ticker2symbol[ticker]
+        amount = 0.5
+
+        print('fetching market price starting')
+        marketPrice = await desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])
+        print('fetching market price done')
+        price = marketPrice['bid'] - 250
+        mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
 
 
-    ### defaults ###
-    leverage = 25
-    display_qty = None #TODO TEST others
-    amount = None
-    price = None
-    peg_offset_value = None
-    peg_price_type = None
-    stop_px = None
-    exec_inst = None
-    expiracy = None
+        print('order creation starting')
+        order = await desk.create_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
+                                      display_qty=display_qty, stop_px=stop_px, peg_offset_value= peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst,
+                                      expiracy=expiracy,
+                                      amount=amount,
+                                      price=price)
+        print('order creation done')
 
-    side = 'buy'
-    order_type = 'Limit'
-    symbol = gv.ticker2symbol[ticker]
-    amount = 0.5
-    
-    print('fetching market price starting')
-    marketPrice = await desk.do_fetchMarketPrice(symbol = gv.ticker2symbol[ticker])  
-    print('fetching market price done')  
-    price = marketPrice['bid'] - 250
-    mexAmount = Order._mexContractAmount(currencyAmount = amount, currencyPrice = price)
 
-    
-    print('order creation starting')
-    order = await desk.create_order(symbol=symbol, side=side, order_type=order_type, leverage=leverage,
-                                  display_qty=display_qty, stop_px=stop_px, peg_offset_value= peg_offset_value, peg_price_type=peg_price_type, exec_inst=exec_inst,
-                                  expiracy=expiracy,
-                                  amount=amount,
-                                  price=price)
-    print('order creation done')
+        print('order formatting starting')
+        order.format(marketPrice = marketPrice)
+        print('order formatting done')
 
-    
-    print('order formatting starting')
-    await order.format(marketPrice = marketPrice)
-    print('order formatting done')
 
-    
-    print('order execution starting')
-    print(await desk.execute_order(order))
-    print('order execution done')
+        print('order execution starting')
+        print(await desk.execute_order(order))
+        print('order execution done')
 
-    return 'order is passed'
+        return 'order is passed'
+
 
 if __name__ == '__main__':
     event_loop = asyncio.get_event_loop()

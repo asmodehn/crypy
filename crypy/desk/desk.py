@@ -64,6 +64,17 @@ class Desk:
         bal = BalanceAll(**{e: bal_raw.get(e) for e in ['free', 'used', 'total']})
         return bal
 
+
+    async def __aenter__(self):
+        await self.exchange.loadMarkets()  # preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
+
+        self.capital = capital.Capital(self.exchange)
+        self.capital.update()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.exchange.close()
+
     def __init__(self, conf: config.ExchangeSection = None):
         self.exchangeName = conf.name
 
@@ -75,10 +86,6 @@ class Desk:
         self.exchange.apiKey = conf.apiKey
         self.exchange.secret = conf.secret
 
-        self.exchange.loadMarkets() #preload market data. NB: forced reloading w reload=True param, TODO: when do we want to do that ? #https://github.com/ccxt/ccxt/wiki/Manual#loading-markets
-
-        self.capital = capital.Capital(self.exchange)
-        self.capital.update()
 
     async def do_getExchangeInfo(self):
         filename = 'exg_' + self.exchangeName + '.txt'
@@ -230,7 +237,7 @@ class Desk:
                 raise errors.CrypyException(msg=f'privatePostPositionLeverage() not available for this exchange')
 
         # TODO : instantiate the order implementation matching our current exchange.
-        order = await Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
+        order = Order(symbol=symbol, side=side, type=order_type, leverage=leverage,
                       display_qty=display_qty, stop_px=stop_px, peg_offset_value=peg_offset_value,
                       peg_price_type=peg_price_type, exec_inst=exec_inst, expiracy=expiracy, id=None,
                       amount=amount,
