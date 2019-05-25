@@ -33,6 +33,7 @@ aiohttp = "*"
 yarl = "*"
 fuzzyfinder = "*"
 returns = "*"
+prompt-toolkit = "*"
 
 [dev-packages]
 
