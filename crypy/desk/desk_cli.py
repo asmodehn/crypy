@@ -7,7 +7,9 @@ import sys
 import asyncio
 
 import click
-import prompt_toolkit
+from prompt_toolkit import prompt
+from prompt_toolkit.eventloop.defaults import use_asyncio_event_loop
+from prompt_toolkit.patch_stdout import patch_stdout
 
 #from dataclasses import asdict
 #from collections import OrderedDict
@@ -36,33 +38,39 @@ config = crypy.config.Config()
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option('-e', '--exchange', default=gv.defEXCHANGE, type=click.Choice(config.sections.keys()), show_default=True) #https://click.palletsprojects.com/en/7.x/options/#choice-options
 @click.pass_context
-def cli_root_group(ctx, exchange):
-    #ensure that ctx.obj exists and is a dict
-    ctx.ensure_object(dict)
+async def cli_root_group(ctx, exchange):
+    print(f"cli_root_group instanciation")
+    while True:
+        async with patch_stdout():
+            #ensure that ctx.obj exists and is a dict
+            ctx.ensure_object(dict)
 
-    global desk
-    if desk is None:
-        exchange_config = config.sections[exchange]
-        desk = ctx.obj['desk'] = ctx.obj.get('desk', Desk(conf=exchange_config))
+            #global desk
+            #if desk is None:
+            #    exchange_config = config.sections[exchange]
+            #    desk = ctx.obj['desk'] = ctx.obj.get('desk', Desk(conf=exchange_config))
 
-    # starting repl if no command passed
-    if ctx.invoked_subcommand is None:
-        crepl = repl.start_repl(ctx, exchange)
+            ## starting repl if no command passed
+            #if ctx.invoked_subcommand is None:
+            #    crepl = await repl.start_repl(ctx, exchange)
+            #print(f"typed: {result}")
+            result = await prompt('Say something: ', async_=True)
+        print(f"typed: {result}")
 
     # otherwise invoke the specified subcommand (default behavior)
 
 @cli_root_group.command()
 @click.pass_obj
-def exchange_info(obj):
+async def exchange_info(obj):
     """print exchange info to file exg_%EXCHANGE_NAME%.txt"""
-    print(desk.do_getExchangeInfo())
+    print(await desk.do_getExchangeInfo())
 
 @cli_root_group.command()
 @click.argument('what', type=click.Choice(['data', 'orders-all', 'orders-open', 'orders-closed', 'positions', 'trades']), default='data')
 @click.pass_obj
-def list(obj, what):
+async def list(obj, what):
     """display all followed pairs informations"""
-    print( desk.do_list(what = what, customParams = {}) )  #todo customparams for exchange if needed
+    print( await desk.do_list(what = what, customParams = {}) )  #todo customparams for exchange if needed
 
 @cli_root_group.command()
 @click.pass_context
@@ -88,12 +96,12 @@ async def balance(ctx, part):
 @click.option('-s', '--since', type=datetime, show_default=True)
 @click.option('-l', '--limit', type=int, default=25, show_default=True)
 @click.pass_context
-def ledger(ctx, assets, type, since, limit):
+async def ledger(ctx, assets, type, since, limit):
     """
     Get user asset ledger (private data)
     """
     #todo use assets and type params (possible w ccxt ? maybe through "code" arg ?)
-    print( desk.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
+    print( await desk.do_fetchLedger( code = None, since = since, limit = limit, customParams = {}) ) #todo code for exchange if needed #todo customparams for exchange if needed
 
 
 #@cli_root_group.command()

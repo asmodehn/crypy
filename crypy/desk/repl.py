@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import os
+import asyncio
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.layout import Layout
@@ -23,7 +24,7 @@ from prompt_toolkit.styles import Style
 
 # TODO : https://python-prompt-toolkit.readthedocs.io/en/stable/pages/tutorials/repl.html
 
-def start_repl(ctx, exchange):
+async def start_repl(ctx, exchange):
 
     prompt_toolkit.shortcuts.clear()
     click.echo(f"-== TRADING CLI ==-")
@@ -33,6 +34,7 @@ def start_repl(ctx, exchange):
     # Setup the prompt
     # https://python-prompt-toolkit.readthedocs.io/en/stable/pages/reference.html?prompt_toolkit.shortcuts.Prompt#prompt_toolkit.shortcuts.PromptSession
     prompt_kwargs = {
+        'async_': True,
         'message': f"{exchange}> ",
         'history': prompt_toolkit.history.FileHistory(os.path.join(sys.path[0], 'crypy.hist')),
         # TODO don't use os.path
@@ -44,4 +46,5 @@ def start_repl(ctx, exchange):
     }
 
     # launching repl
-    return crepl(ctx, prompt_kwargs=prompt_kwargs, allow_system_commands=False)
+    repl = await crepl(ctx, prompt_kwargs=prompt_kwargs, allow_system_commands=False)
+    return repl

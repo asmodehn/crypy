@@ -77,18 +77,36 @@ async def asyncLong():
         return 'order is passed'
 
 
+from prompt_toolkit import prompt
+from prompt_toolkit.eventloop.defaults import use_asyncio_event_loop
+from prompt_toolkit.patch_stdout import patch_stdout
+
+
 from crypy.desk.desk_cli import cli_root_group as cli
-from crypy.desk.capital_cli import capital_group
-from crypy.desk.order_cli import order_group
+#from crypy.desk.capital_cli import capital_group
+#from crypy.desk.order_cli import order_group
+
+
+#async def myCoroutine():
+#    while True:
+#        with patch_stdout():
+#            result = await prompt('Say something: ', async_=True)
+#        print(f"typed: {result}")
 
 if __name__ == '__main__':
     event_loop = asyncio.get_event_loop()
+    use_asyncio_event_loop(loop = event_loop) #Tell prompt_toolkit to use the asyncio event loop
+
     try:
         ret = event_loop.run_until_complete(
             #asyncLong()
             cli()
+            #myCoroutine()
         )
-        print(f"Returned: {ret}")
+        print(f"Loop return: {ret}")
 
     finally:
         event_loop.close()
+
+
+
