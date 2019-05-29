@@ -138,7 +138,7 @@ class POPUnionType(POPType):
         return parsed
 
 
-class POPCompoundType:
+class POPCompoundType(POPType):
 
     types: typing.Dict[str, POPType]  # python type (with unions) implementation
     session: prompt_toolkit.PromptSession
