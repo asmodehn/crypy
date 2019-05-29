@@ -4,6 +4,7 @@ Limiting ourselves to python typesfor now.
 """
 from __future__ import annotations
 
+import copy
 import itertools
 import typing
 
@@ -31,6 +32,13 @@ sample_elem = {
 # hooking POPModel in the pydantic validator hierarchy
 # class POPModel(pydantic.BaseModel):
 #
+#     def __init__(self, **data: typing.Any) -> None:
+#         super().__init__(**data)
+#
+#
+#
+#
+#
 #     @classmethod
 #     def __get_validators__(cls) -> CallableGenerator:
 #         yield cls.validate
@@ -47,8 +55,59 @@ sample_elem = {
 #
 #     def __call__(self, *args, **kwargs):
 #         pass
-#
 
+
+
+class PydanticErrorPrompter:
+    """
+    A prompter instantiated from a pydantic error
+    """
+    model: typing.Type[pydantic.BaseModel]
+    original_data: typing.Mapping['str', typing.Any]
+    pydantic_error: pydantic.ValidationError
+    prompt: typing.Callable
+
+    @staticmethod
+    def _display_error_loc(error: typing.Dict[str, typing.Any]) -> str:
+        return ' -> '.join(str(l) for l in error['loc'])
+
+    @staticmethod
+    def _display_error_type_and_ctx(error: typing.Dict[str, typing.Any]) -> str:
+        t = 'type=' + error['type']
+        ctx = error.get('ctx')
+        if ctx:
+            return t + ''.join(f'; {k}={v}' for k, v in ctx.items())
+        else:
+            return t
+
+    def __init__(self, model, original_data: typing.Mapping['str', typing.Any], pydantic_error: pydantic.ValidationError, prompt_session: prompt_toolkit.PromptSession = None):
+        self.model = model
+        self.original_data = original_data
+        self.pydantic_error = pydantic_error
+        self.prompt = prompt_session.prompt if prompt_session is not None else prompt_toolkit.prompt
+
+    def __call__(self) -> typing.Mapping['str', typing.Any]:
+        # calling prompt and return another data
+        data = copy.deepcopy(self.original_data)  # TODO : check with copy of data in pydantic...
+        for e in self.pydantic_error.errors():
+            # print error as pydantic would
+            print(f'{self._display_error_loc(e)}\n  {e["msg"]} ({self._display_error_type_and_ctx(e)})')
+            # get information on original intent via python mechanism (pydantic seems too tricky ?)
+
+            # diving into model to find proper location and its annotation
+            l = e['loc'][0]
+            m = self.model.__annotations__.get(l)
+            d = {l: None}  # data to fill up later
+            s = d  # data structure for deep values
+            for le in e['loc'][1:]:
+                m = m.__annotations__.get(le)
+                s = {le: s}
+            #TODO : debug htat with nested structures !!
+
+            # prompt for new data and store it in structure
+            d[l] = self.prompt(message=f"{'.'.join(e['loc'])}: {m} ?")
+            data.update(s)
+        return data
 
 
 class POP:
@@ -65,21 +124,19 @@ class POP:
         # TODO : better wordcompleter (define more precisely possible values, maybe dynamically)
 
         self.session = prompt_toolkit.PromptSession(
-            message=str(model) + '? ',
             history=InMemoryHistory(),
             auto_suggest=AutoSuggestFromHistory(),
             completer=completer, complete_style=CompleteStyle.COLUMN,
         )
 
     def __call__(self, **data: typing.Any):
-
         inst = None
         while inst is None:
             try:
                 inst = self.model(**data)
             except ValidationError as ve:
-                print(ve)
-                data = self.session.prompt()
+                eprompt = PydanticErrorPrompter(self.model, data, ve, self.session)
+                data = eprompt()
                 inst = None
         return inst
 
