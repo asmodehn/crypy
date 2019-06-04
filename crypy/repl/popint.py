@@ -5,8 +5,11 @@ Limiting ourselves to python typesfor now.
 from __future__ import annotations
 
 import copy
+import functools
+import inspect
 import itertools
 import typing
+import collections.abc
 
 import enum
 import prompt_toolkit
@@ -80,6 +83,18 @@ class PydanticErrorPrompter:
         else:
             return t
 
+    @staticmethod
+    def inner_prompt(loc: typing.Tuple[typing.Any], model: typing.Union[typing.Type[BaseModel]]):  # TODO : fill up that Union
+        if model in [int, float]:
+            # ending recursion on basic python types
+            return self.prompt(message=f": {model} ?")
+        elif BaseModel in inspect.getmro(model):
+            return {loc[0]: PydanticErrorPrompter.inner_prompt(loc[1:], model.__annotations__.get(loc[0]))}
+        elif model == typing.List:
+            return {loc[0]: PydanticErrorPrompter.inner_prompt(loc[1:], model[loc[0]])}
+        else:
+            raise NotImplementedError
+
     def __init__(self, model, original_data: typing.Mapping['str', typing.Any], pydantic_error: pydantic.ValidationError, prompt_session: prompt_toolkit.PromptSession = None):
         self.model = model
         self.original_data = original_data
@@ -95,27 +110,22 @@ class PydanticErrorPrompter:
             # get information on original intent via python mechanism (pydantic seems too tricky ?)
 
             # diving into model to find proper location and its annotation
-            l = e['loc'][0]
-            m = self.model.__annotations__.get(l)
-            d = {l: None}  # data to fill up later
-            s = d  # data structure for deep values
-            for le in e['loc'][1:]:
-                m = m.__annotations__.get(le)
-                s = {le: s}
-            #TODO : debug htat with nested structures !!
+            s = PydanticErrorPrompter.inner_prompt(e['loc'], self.model)
+
+            # TODO : debug that with nested structures !!
 
             # prompt for new data and store it in structure
-            d[l] = self.prompt(message=f"{'.'.join(e['loc'])}: {m} ?")
+            #d =
             data.update(s)
         return data
 
 
 class POP:
 
-    session: prompt_toolkit.PromptSession
+    session: prompt_toolkit.PromptSession  # TODO : allow mock object here (testing prompt in integration automatically is very tricky...)
     model: typing.Type[BaseModel]
 
-    def __init__(self,  model: typing.Type[BaseModel]) -> None:
+    def __init__(self,  model: typing.Type[BaseModel], prompter_session = prompt_toolkit.PromptSession) -> None:
 
         self.model = model
 
@@ -123,7 +133,7 @@ class POP:
         completer = WordCompleter(['alice', 'bob', 'charlie'])
         # TODO : better wordcompleter (define more precisely possible values, maybe dynamically)
 
-        self.session = prompt_toolkit.PromptSession(
+        self.session = prompter_session(
             history=InMemoryHistory(),
             auto_suggest=AutoSuggestFromHistory(),
             completer=completer, complete_style=CompleteStyle.COLUMN,
@@ -192,9 +202,13 @@ if __name__ == '__main__':
     from datetime import datetime
     from typing import List
 
+    class FullName(BaseModel):
+        first: str
+        last: str = 'Doe'
+
     class User(BaseModel):
         id: int
-        name = 'John Doe'
+        name: FullName
         signup_ts: datetime = None
         friends: List[int] = []
 

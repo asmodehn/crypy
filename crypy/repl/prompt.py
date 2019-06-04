@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from typing import Mapping, MutableMapping, Sequence, Iterable, List, Set, TypeVar
 import pydantic
+import typing
 from prompt_toolkit import prompt
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -35,6 +36,18 @@ T = TypeVar('T')
 
 
 def validate(input_value: str, t: type(T), *elem_types) -> result.Result[T, Exception]:  # TODO : refine return types
+    """
+    :param input_value:
+    :param t:
+    :param elem_types:
+    :return:
+
+    >>> validate("1", int)
+
+    >>> validate("1 2", typing.List[int])
+
+    >>> validate("answer 42")
+    """
     try:
         if t in [int, float, complex, str]:
             assert " " not in input_value  # avoiding problems later...
@@ -53,7 +66,7 @@ def validate(input_value: str, t: type(T), *elem_types) -> result.Result[T, Exce
         return e
 
 
-def parselist(input: str, separator=" ", elem_type: T) -> typing.Iterator[T]:
+def parselist(input: str, separator=" ", elem_type: T = object) -> typing.Iterator[T]:
     for e in input.split(sep=separator):
         yield validate(e, elem_type)
 
@@ -61,13 +74,14 @@ def parselist(input: str, separator=" ", elem_type: T) -> typing.Iterator[T]:
 H = typing.TypeVar('H')  # should be hashable
 
 # TODO : probably something similar to python calling mechanisms ?
-def parsedict(input: str, separator=" ", key_prefix="--", key_type=H, elem_type) -> typing.Dict[H, elem_type]:
+def parsedict(input: str, separator=" ", key_prefix="--", key_type: H = str, elem_type: T = object) -> typing.Dict[H, T]:
 
     parsed = collections.OrderedDict()
     curkey = None
     for ve in parselist(input=input, separator=separator, *elem_type):
         if ve.startswith(key_prefix):
             curkey = ve[len(key_prefix):]
+            parsed[curkey] = None
         else:
             parsed[curkey] = validate(input_value=ve, t=elem_type[0], *elem_type[1:])
 
