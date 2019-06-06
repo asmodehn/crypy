@@ -29,6 +29,9 @@ pydantic = "*"
 hypothesis = "*"
 structlog = "*"
 #parameterized = "*"
+marshmallow = "==2.*"
+typeguard = "*"
+marshmallow-dataclass = "==0.6.5"
 
 [dev-packages]
 
