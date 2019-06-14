@@ -28,4 +28,54 @@ city = City.Schema().load({
 # Serializing city as a json string
 city_json = City.Schema().dumps(city)
 
-print(city_json)
+import click
+
+
+
+@click.group("Cities")
+@click.pass_context
+def cities(ctx):
+    ctx.obj={city.name: city}
+
+
+@cities.command()
+@click.pass_obj
+def browse(obj):
+    """browse all cities"""
+    for n, c in obj.items():
+        click.echo(n + ":")
+        click.echo(c)
+
+@cities.command()
+@click.argument("name")
+@click.pass_obj
+def read(obj, name):
+    click.echo(obj.get(name))
+
+
+def edit(name):
+    #TODO : interactive repl ?? all in cmd line ???
+    pass
+
+
+@cities.command()
+@click.argument("name")
+@click.argument("city")
+@click.pass_obj
+def add(obj, name, city):
+    obj[name] = city
+
+
+@cities.command()
+@click.argument("name")
+@click.pass_obj
+def delete(obj, name):
+    click.echo(obj.pop(name))
+
+
+
+if __name__ == '__main__':
+    cities()
+
+
+
