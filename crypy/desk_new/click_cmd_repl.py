@@ -5,6 +5,33 @@ from pydantic import BaseModel, ValidationError, validate_model
 import unittest
 
 
+class Answer(BaseModel):
+
+    # Data model of user interface (might be different than data model of Exchange interface)
+
+    data: int
+
+    def __init__(self, data: int):
+        super().__init__(data=data)
+
+    def printme(self):
+        print(self.data)
+        # Complicated code will be here
+        return True
+
+
+class TestAnswer(unittest.TestCase):
+
+    # NOTE : later we can extract complex hypothesis test structures with pydantic into separate packages
+    # already done for other parsers : https://hypothesis.readthedocs.io/en/latest/strategies.html#external-strategies
+
+    @hypothesis.settings(verbosity=hypothesis.Verbosity.verbose)
+    @hypothesis.given(a=hypothesis.infer)
+    def test_printme(self, a: int):
+
+        answer = Answer(a)
+        assert answer.printme()
+
 class Right(BaseModel):
 
     # Data model of user interface (might be different than data model of Exchange interface)
@@ -184,7 +211,7 @@ async def repl()-> typing.Union[Answer, Right, AnswerOrRight, AnswerAndRight]:
             if data.digit :
                 values, errors = validate_model(model=Answer, input_data={'data': data}, raise_exc=False)
             elif data:
-
+                pass #TODO
             if errors:
                 print(errors)
                 data = await prompt_toolkit.prompt(message="Enter Answer AGAIN: ", async_=True)
